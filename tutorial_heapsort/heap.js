@@ -47,7 +47,7 @@ function minheap_extract(heap) {
 // assign extract function within minheaper object
 
     // STENCIL: ensure extract method is within minheaper object
-
+    minheaper.extract = minheap_extract;
 
 
 
