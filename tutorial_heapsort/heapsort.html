@@ -63,9 +63,7 @@
         two function methods for inserting and extracting heap elements.
 -->
 
-<!--  you will want to uncomment this tag
 <script src="heap.js"></script>
--->
  
 
 <!--
@@ -191,13 +189,15 @@ function startMeUp () {
     console.log("sorting numbers that have been heapified");
     numbers_sorted = [];
     for (i=0;i<numbers.length;i++) {
+        output_string = "heap (extract " + numbers_heap[0] + "): "; //
+        console.log("extracted number "+numbers_heap[i]+" from the heap"); 
         numbers_sorted[i] = minheaper.extract(numbers_heap);
+        
 
-        output_string = "heap (extract " + numbers_sorted[i] + "): "; // 
+        // output_string = "heap (extract " + numbers_sorted[i] + "): "; // 
         for (j=0;j<numbers_heap.length;j++) {
             output_string += numbers_heap[j] + " "; //
         }
-        console.log("extracted number "+numbers_sorted[i]+" from the heap");
         console.log("appending current heap state to output object");
         addHTMLLine("output",output_string);
     }
