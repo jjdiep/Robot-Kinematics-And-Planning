@@ -73,20 +73,20 @@ function init() {
 function initSearch() {
 
     // specify default search algorithm to use for planning
-    //search_alg = "depth-first";  
-    //search_alg = "breadth-first";  
-    //search_alg = "greedy-best-first";  
+    // search_alg = "depth-first";  
+    // search_alg = "breadth-first";  
+    // search_alg = "greedy-best-first";  
     search_alg = "A-star";  
-    //search_alg = "RRT";  
-    //search_alg = "RRT-connect";  
-    //search_alg = "RRT-star";  
+    // search_alg = "RRT";  
+    // search_alg = "RRT-connect";  
+    // search_alg = "RRT-star";  
 
     // specify default the world for the planner 
     //  (stored as "range" global variable with name "planning_scene")
     //planning_scene = "empty";
-    planning_scene = "misc";
+    // planning_scene = "misc";
     //planning_scene = "narrow1";
-    //planning_scene = "narrow2";
+    planning_scene = "narrow2";
     //planning_scene = "three_sections";
 
     // specify default eps (epsilon) spatial resolution variable
@@ -122,7 +122,7 @@ function initSearch() {
 
     // specify start and goal configurations
     q_start_config = [0,0];
-    q_goal_config = [4,4];
+    q_goal_config = [4,4]; // changed for testing JD
     q_init = q_start_config;
     q_goal = q_goal_config;
 
@@ -223,9 +223,9 @@ function animate() {
 
         // call iteration for the selected search algorithm
         switch (search_alg) {
-            case "depth-first": 
+            case "depth-first":
             case "breadth-first": 
-            case "greedy-best-first": 
+            case "greedy-best-first":
             case "A-star": 
                 search_result = iterateGraphSearch();
                 break;
@@ -273,7 +273,7 @@ function animate() {
     requestAnimationFrame( animate );
 }
 
-function iterateGraphSearch() {
+function iterateGraphSearch() { // Assignment 1
 
 
     // STENCIL: implement a single iteration of a graph search algorithm
@@ -289,9 +289,147 @@ function iterateGraphSearch() {
     //
     //   testCollision - returns whether a given configuration is in collision
     //   drawHighlightedPathGraph - draws a path back to the start location
-    //   draw_2D_configuration - draws a square at a given location 
+    //   draw_2D_configuration - draws a square at a given location
+    // if ( (visit_queue.length != 0) && ( (G[visit_node.i][visit_node.j].x != q_goal[0]) && (G[visit_node.i][visit_node.j].y != q_goal[1]) ) ) {
+
+    var f_xgoal = Math.abs(q_goal[0] - G[visit_node.i][visit_node.j].x);
+    var f_ygoal = Math.abs(q_goal[1] - G[visit_node.i][visit_node.j].y);
+
+    switch (search_alg) { // dequeue by first pushing neighbor nodes from neighbor queue to visit queue and then dequeue-ing by order specified in search selected
+        case "depth-first": // Stack, LIFO: Last in first out
+            for (neighbor_i = 0; neighbor_i < neighbor_queue.length; neighbor_i++) {
+                visit_queue.push(neighbor_queue[neighbor_i]);
+            }
+            neighbor_queue = [];
+            if ( (visit_queue.length != 0) && (!(f_xgoal <= eps/2) || !(f_ygoal <= eps/2)) ) {
+                visit_node = visit_queue.pop();
+                search_iteration(); 
+                return "iterating"
+            } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
+                drawHighlightedPathGraph(visit_node);
+                search_iterate = false;
+                return "succeeded"
+
+            } else {
+
+                search_iterate = false;
+                return "failed"
+            }
+            break;
+
+        case "breadth-first": // Queue, FIFO: First in first out
+            for (neighbor_i = 0; neighbor_i < neighbor_queue.length; neighbor_i++) {
+                visit_queue.push(neighbor_queue[neighbor_i]);
+            }
+            neighbor_queue = [];
+            if ( (visit_queue.length != 0) && (!(f_xgoal <= eps/2) || !(f_ygoal <= eps/2)) ) {
+                visit_node = visit_queue.shift();
+                search_iteration(); 
+                return "iterating"
+            } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
+                drawHighlightedPathGraph(visit_node);
+                search_iterate = false;
+                return "succeeded"
+
+            } else {
+
+                search_iterate = false;
+                return "failed"
+            }
+            break;
+
+        case "greedy-best-first": // sorted via min heap to create priority queue, fscore = hscore, sort by heuristic to goal
+        case "A-star": // sorted via min heap to create priority queue, priority queue fscore = hscore + gscore, sort by heuristic to goal and path edge cost
+            var len_queue = neighbor_queue.length;
+            // var tmp_queue = [];
+            for (i_node = 0; i_node < len_queue; i_node++) {
+                var tmp = neighbor_queue[i_node];
+                minheap_insert(visit_queue, tmp);
+            }
+            neighbor_queue = [];
+            if ( (visit_queue.length != 0) && (!(f_xgoal <= eps/2) || !(f_ygoal <= eps/2)) ) {
+                // visit_queue = tmp_queue
+                visit_node = minheap_extract(visit_queue);
+                search_iteration();
+                return "iterating"
+            } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
+                drawHighlightedPathGraph(visit_node);
+                search_iterate = false;
+                search_visited += 1;
+                return "succeeded"
+
+            } else {
+
+                search_iterate = false;
+                return "failed"
+            }
+            break; 
+        default:
+            // do nothing?
+            break;
+    }
 }
 
+function search_iteration() {
+    // single search iteration to explore neighboring nodes
+    G[visit_node.i][visit_node.j].queued = false;        
+    G[visit_node.i][visit_node.j].visited = true;
+    search_visited += 1;
+
+    // explore visit node neighbors
+    // var new_neighbors = false; // not sure
+    if (visit_node.i+1 < G.length) { // east
+        var east_node = G[visit_node.i+1][visit_node.j];
+        explore(east_node) // enqueue if unvisited and not obstacle
+    }
+    if (visit_node.j+1 < G.length) { // south
+        var south_node = G[visit_node.i][visit_node.j+1];
+        explore(south_node)
+    }
+
+    if (visit_node.i-1 >= 0) { // west
+        var west_node = G[visit_node.i-1][visit_node.j];
+        explore(west_node)
+    }
+
+    if (visit_node.j-1 >= 0) { // north
+        var north_node = G[visit_node.i][visit_node.j-1];
+        explore(north_node)
+    }
+    
+    search_iterate = true;
+    draw_2D_configuration([G[visit_node.i][visit_node.j].x,G[visit_node.i][visit_node.j].y]);
+}
+
+function explore(neighbor_node) {
+    // Check neighbors for collision and whether queued or visited yet and add to visit queue (via neighbor queue)
+    if (!testCollision([neighbor_node.x,neighbor_node.y]) && !G[neighbor_node.i][neighbor_node.j].queued && !G[neighbor_node.i][neighbor_node.j].visited) {
+        G[neighbor_node.i][neighbor_node.j].queued = true; // queued flag
+        neighbor_queue.push( G[neighbor_node.i][neighbor_node.j] ); // queued
+        var nbr_dist = Math.abs(G[neighbor_node.i][neighbor_node.j].x - G[visit_node.i][visit_node.j].x) + Math.abs(G[neighbor_node.i][neighbor_node.j].y - G[visit_node.i][visit_node.j].y);
+
+        if (G[neighbor_node.i][neighbor_node.j].distance > G[visit_node.i][visit_node.j].distance + nbr_dist) { // create shorter route
+
+            G[neighbor_node.i][neighbor_node.j].parent = G[visit_node.i][visit_node.j]; // parent node
+        
+            gscore = G[visit_node.i][visit_node.j].distance + nbr_dist; // Manhattan distance from current through parent to start via path
+            hscore = Math.sqrt( Math.pow( (q_goal[0]-G[neighbor_node.i][neighbor_node.j].x), 2) + Math.pow( (q_goal[1]-G[neighbor_node.i][neighbor_node.j].y), 2) );
+            // Euclidean distance to goal from current node
+            fscore = gscore + hscore; // A* search priority
+
+            G[neighbor_node.i][neighbor_node.j].distance = gscore;
+
+            if (search_alg == "greedy-best-first") { // priority in GBF is calculated via fscore = hscore
+                
+                G[neighbor_node.i][neighbor_node.j].priority = hscore;
+                
+            } else { // priority by default is "A-star" and is calculated via fscore = hscore + gscore
+                
+                G[neighbor_node.i][neighbor_node.j].priority = fscore;
+            }
+        }
+    }
+}
 
 function iterateRRT() {
 
@@ -407,10 +545,11 @@ function drawHighlightedPathGraph(current_node) {
 }
 
 
-function initSearchGraph() {
+function initSearchGraph() { // Assignment 1
 
     // KE: visit queue not created for certain values of eps
     visit_queue = [];
+    neighbor_queue = [];
 
     // initialize search graph as 2D array over configuration space 
     //   of 2D locations with specified spatial resolution 
@@ -430,7 +569,21 @@ function initSearchGraph() {
 
             // STENCIL: determine whether this graph node should be the start
             //   point for the search
-                visit_queue = [];
+
+            // From Slack @OCJ: This square is centered at location (`G[i][j].x`,`G[i][j].y`) and has width and height of `eps`.  
+            // A particular location `q` in world space would fall within the square cell of node `G[i][j]` if its distance from the cell center is less than `eps/2` 
+            // along the horizontal and vertical directions.
+
+            // Localize Initial Pose to Graph Node G[i][j]
+            if ( (Math.abs(q_init[0] - xpos) <= eps/2) && (Math.abs(q_init[1] - ypos) <= eps/2) ) {
+                if (!testCollision([G[iind][jind].x,G[iind][jind].y])) {
+                    G[iind][jind].queued = true;
+                    G[iind][jind].visited = true;
+                    G[iind][jind].distance = 0;
+                    visit_node = G[iind][jind];
+                    neighbor_queue.push(G[iind][jind]);
+                }
+            }
         }
     }
 }
@@ -572,7 +725,66 @@ function insertTreeEdge(tree,q1_idx,q2_idx) {
     // STENCIL: implement min heap functions for graph search priority queue.
     //   These functions work use the 'priority' field for elements in graph.
 
+// define insert function for min binary heap
+function minheap_insert(heap, new_element) {
+    var elntIdx = heap.length;
+    var prntIdx = Math.floor( (elntIdx - 1)/ 2);
 
+    heap.push(new_element);
+
+    // STENCIL: implement your min binary heap insert operation
+    var heaped = (elntIdx <= 0) || (heap[prntIdx].priority <= heap[elntIdx].priority);
+    while (!heaped) {
+        // Swap element and parent, sort by min priority
+        var tmp = heap[prntIdx];
+        heap[prntIdx] = heap[elntIdx];
+        heap[elntIdx] = tmp;
+
+        // Update element and parent index
+        elntIdx = prntIdx;
+        prntIdx = Math.floor( (elntIdx -1 ) / 2 );
+
+        // Re-evaluate heap condition
+        heaped = (elntIdx <= 0) || (heap[prntIdx].priority <= heap[elntIdx].priority);
+    }
+}
+
+// define extract function for min binary heap
+function minheap_extract(heap) {
+
+    // // STENCIL: implement your min binary heap extract operation
+    if (heap.length == 1) {
+       return heap.pop();
+    }
+    // Extract root of heap, replace with farthest right node, sort by min priority
+    var lastHeap = heap.pop();
+    var minHeap = heap[0];
+    heap[0] = lastHeap;
+    
+    // Heapify
+    var elntIdx = 0;
+    var heaped = 0; 
+
+    while (!heaped) {
+        var leftHeap = 2 * elntIdx + 1;
+        var rightHeap = 2 * elntIdx + 2;
+        var tmp = heap[elntIdx];
+        if (leftHeap >= heap.length) {
+            break;
+        } else if (((rightHeap >= heap.length) && (heap[elntIdx].priority > heap[leftHeap].priority)) || ((rightHeap < heap.length) && (heap[elntIdx].priority > heap[leftHeap].priority) && (heap[leftHeap].priority <= heap[rightHeap].priority))) {
+            heap[elntIdx] = heap[leftHeap];
+            heap[leftHeap] = tmp;
+            elntIdx = leftHeap;
+        } else if ((rightHeap  < heap.length) && (heap[elntIdx].priority > heap[rightHeap].priority) && (heap[leftHeap].priority > heap[rightHeap].priority)) {
+            heap[elntIdx] = heap[rightHeap];
+            heap[rightHeap] = tmp;
+            elntIdx = rightHeap;
+        } else {
+            break;
+        }
+    }
+    return minHeap;
+}
 
 //////////////////////////////////////////////////
 /////     RRT IMPLEMENTATION FUNCTIONS
