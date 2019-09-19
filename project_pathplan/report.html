@@ -1,0 +1,153 @@
+<body>
+<h1> EECS 567 Assignment 1: Project Path Plan </h1>
+<h2> Justin Diep </h2>
+<h2> 9/18/19 </h2>
+
+<h3> Motivation: </h3>
+<p>
+    Path planning is the task of finding a continuous path that will drive the robot and or agent from the start to the goal configuration. Along with trajectory planning and motion planning, this class of algorithms is designed to solve the navigation problem or the piano mover's problem of navigating in a known (or sometimes unknown) environment in order to accomplish a desired task. In this assignment, we look at using (fixed) graph search algorithms, namely depth first search, breadth first search, greedy best first search, and A* search to develop a collision-free planner to solve for a path between a known q_start configuration and a known q_goal configuration. The environment is in two dimensions, consisting of a uniformly spaced grid with known obstacle positions. Low-dimensional problems such as these can be solved with grid-based algorithms that overlay a grid on top of configuration space, or geometric algorithms that compute the shape and connectivity of free (allowable) configuration space and we implement these search algorithms to navigate through this grid configuration space in this assignment.
+</p>
+
+<figure>
+    <div>
+        <img src='astar_end.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> Example of Graph Based Search Algorithm: A* Search. Such algorithms iteratively explore the graph structure of the environment and use data structures such as queues, stacks, priority queues (and in this assignment heaps) to determine the next graph node to explore in order to go from the start to goal configuration. </figcaption>
+    </div>
+</figure>
+
+
+<h3> Value Proposition: </h3>
+<p>
+    The variation of search algorithms implemented in this assignment can be accounted for primarily by how nodes are added and extracted from the visit list that the planner generates as it explores the grid for a valid path to go between the start configuration and the goal configuration. In this report, differences in the algorithm formulation, general behavior in the simulation environment, theoretical (and simulated) computational efficiency, and optimality of the final path plan generated are analyzed and presented.
+</p>
+
+
+<h3> Methods: </h3>
+<h4> A* Search </h4>
+<p>
+    A* is an informed search algorithm, or a best-first search. It aims to find a path to the given goal node having the smallest cost (in this implementation, shortest path distance). It does this by maintaining a tree of paths originating at the start node and extending those paths one edge at a time until its termination criterion is satisfied. A* terminates when the path it chooses to extend is a path from start to goal or if there are no paths eligible to be extended.
+
+    At each iteration of its main loop, A* determines based on the cost of the path and an estimate of the cost required the path that extends to the goal. Specifically, A* selects the path that minimizes
+
+    <br><br>
+        f ( n ) = g ( n ) + h ( n ) 
+    <br><br>
+
+    where n is the next node on the path, g(n) is the cost of the path from the start node to n, and h(n) is a heuristic function that estimates the cost of the cheapest path from n to the goal. To calculate g(n) and h(n), we use 4-Connected Manhattan Distance and Euclidean Distance respectively in order to determine the value of the heuristic function.
+
+    <figure>
+        <div>
+            <img src='distance_formulation.png' alt='missing' /> 
+        </div>
+        <div>
+            <figcaption> Formulation of Distance Function. 4-Connected Manhattan Distance was used to calculate the path edge cost from the start or g(n). 4-Connected Euclidean Distance was used to calculate cost from the current node to the goal or h(n). </figcaption>
+        </div>
+    </figure>
+
+    The heuristic function is problem-specific. If the heuristic function is admissible, meaning that it never overestimates the actual cost to get to the goal, A* is guaranteed to return a least-cost path from start to goal. Thus, the h(n) <= the lowest possible cost from the current location to the goal. The function is also consistent such that the value of the h_score(x) <= cost(x,action,x’) + h_score(x’). If the heuristic has the combination of admissability and consistency, this will ensure that the path found will be optimal.
+
+    In the implementation of A* in Assignment 1, a priority queue is used to perform the repeated selection of minimum (estimated) cost nodes to expand. This priority queue is known as the open set or fringe and is created in this project by using a min heap sort algorithm. Using the min heap, the node with the lowest f(x) value will always be the root of the node and is then removed from the queue, where the f and g values of its neighbors are updated accordingly, and these neighbors are also added to the queue. The algorithm continues until a goal node has a lower f value than any node in the queue (or until the queue is empty). The f value of the goal is then the cost of the shortest path, since h at the goal is zero in an admissible heuristic.
+
+</p>
+
+<figure>
+    <div>
+        <img src='astar_narrow2.png' alt='missing' /> 
+        <img src='a_star_three.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> A* Search: Narrow2 and Three Sections Scene </figcaption>
+    </div>
+</figure>
+
+<h4> Comparative Search Algorithm Analysis and the Optimality of A* </h4>
+<p>
+    The properties of optimality (via the heuristic function) are evident in the 2D Planner outputs below especially as compared to methods such as Depth First Search where a shorter path length is found, while more efficient in terms of the number of nodes visited/iterations when compared to Breadth First Search. 
+    <br><br>
+    Given the same scene (Narrow2) in the simulation, A* search explores 1528 nodes, maintains a queue size in the end of 41 nodes, and has a final path length of 11.40. In BFS, the algorithm has 2095 node explored, a queue size of 42, and a path 11.40. BFS is complete, and will find an optimal path but as a tradeoff will have higher time complexity. In DFS, the algorith has 1070 nodes explored, a queue size of 933 (as a result of the unexplored nodes still queued when finding the goal state), and the highest path length of 100.20. GBF explores the fewest nodes (139), but finds a path length of 11.40 and has a queue size of 97. GBF however has no guarantee of optimality nor is it complete due to its evaluation function as discussed in the next section.
+</p>
+
+<figure>
+    <div>
+        <img src='astar_narrow2.png' alt='missing' /> 
+        <img src='bfs_narrow2.png' alt='missing' />
+        <img src='dfs_narrow2.png' alt='missing' />
+        <img src='gbf_narrow2.png' alt='missing' />        
+    </div>
+    <div>
+        <figcaption> Comparison of A* vs. BFS vs. DFS. vs. Greedy BFS in Narrow2 scene 
+        </figcaption>
+    </div>
+</figure>
+
+<figure>
+    <div>
+        <img src='CompUninformedSearch.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> Comparison of Uninformed Graph Search (from Artificial Intelligence: A Modern Approach, Russell & Norvig)
+        </figcaption>
+    </div>
+</figure>
+
+
+
+<h4> Greedy-Best First Search (GBF) </h4>
+
+<p>
+    Greedy Best First search, like A* is an informed search algorithm, or a best-first search. Like A* search, it maintains a priority queue (in this implementation, also generated via a min heap sort) that is used to perform the repeated selection of minimum (estimated) cost nodes to expand. However, unlike A* search, GBF at each iteration of its main loop bases the f(n) value on only the heuristic h(n), which is the 4-Connected Euclidean distance from the current node to the goal.
+
+    <br><br>
+        f ( n ) = h ( n ) 
+    <br><br>
+
+    This difference in the evaluation function has practical ramifications to the performance of the algorithm. As seen in the figure below, GBF does not take into account the path cost and naively explores immediately in the direction of the goal state in order to minimize the Euclidean distance. This is evident in the figure below as the GBF planner explores an entire visit nodeset that forms a circle bounded by the Euclidean distance evaluation function around the goal state. 
+<br><br>
+    Gready Best First Search is not complete, when compared to A*, and has no guarantees of finding a solution. However, the advantage is that while in general, the time complexity of Greedy BFS and A* is O(b^m) at worst, where b is the (maximum) branching factor and m is the maximum depth of the search tree, the space complexity pf Greedy BFS is proportional to the number of nodes in the fringe and to the length of the found path. In contrast, A* is exhaustive as seen in the comparison above while being complete and optimal.
+</p>
+
+<figure>
+    <div>
+        <img src='gbf_start.png' alt='missing' /> 
+        <img src='gbf_end.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> Greedy-Best First Search: Narrow2 Scene - Start and End </figcaption>
+    </div>
+</figure>
+
+<h4> Depth First Search (DFS) </h4>
+
+<p>
+    DFS, unlike Greedy BFS or A*, is an uninformed search algorithm that like the latter two informed searches, explores neighboring nodes to find a configuration path between the start node and the goal node. However, unlike them, DFS uses a stack (Last In First Out, LIFO) and explores the most recent node pushed to the visit node queue. As a result, DFS explores as far as possible along each branch to the furthest depth before backtracking. As seen below, DFS is neither complete nor optimal and does not explore the entire configuration space. This is clear in the figures below as it finds a path that is both suboptimal and longer than the paths found by A* or BFS. However, it has the lowest space complexity (O(bm)) as seen in the limited number of nodes that needed to be explored and iterations run. 
+</p>
+
+<figure>
+    <div>
+        <img src='dfs_narrow2.png' alt='missing' /> 
+        <img src='dfs_misc.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> Depth First Search: Narrow2 Scene and Misc Scene </figcaption>
+    </div>
+</figure>
+
+<h4> Breadth First Search (BFS) </h4>
+
+<p>
+    BFS is an uninformed search algorithm that is the opposite of DFS and pursues a strategy that explores all of the neighbor nodes at the present depth prior to moving on to the nodes at the next depth level. BFS does this by using a queue (First In First Out, FIFO) and is guaranteed to be complete. This is seen in the figures below as the BFS Planner explores nearly all nodes in the scene as it searches for the goal state. While this is inefficient, the path output is of the same length as A* in the simulation, demonstrating that it is indeed optimal.
+</p>
+
+<figure>
+    <div>
+        <img src='bfs_narrow2.png' alt='missing' /> 
+        <img src='bfs_misc.png' alt='missing' /> 
+    </div>
+    <div>
+        <figcaption> Breadth First Search: Narrow2 Scene and Misc Scene </figcaption>
+    </div>
+</figure>
+
+</body>
