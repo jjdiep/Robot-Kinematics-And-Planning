@@ -83,11 +83,11 @@ function initSearch() {
 
     // specify default the world for the planner 
     //  (stored as "range" global variable with name "planning_scene")
-    //planning_scene = "empty";
+    // planning_scene = "empty";
     // planning_scene = "misc";
-    //planning_scene = "narrow1";
+    // planning_scene = "narrow1";
     planning_scene = "narrow2";
-    //planning_scene = "three_sections";
+    // planning_scene = "three_sections";
 
     // specify default eps (epsilon) spatial resolution variable
     //   for RRT, specifies threshold radius for step size and reaching goal
@@ -308,10 +308,10 @@ function iterateGraphSearch() { // Assignment 1
             } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
                 drawHighlightedPathGraph(visit_node);
                 search_iterate = false;
+                search_visited += 1;
                 return "succeeded"
 
             } else {
-
                 search_iterate = false;
                 return "failed"
             }
@@ -329,6 +329,7 @@ function iterateGraphSearch() { // Assignment 1
             } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
                 drawHighlightedPathGraph(visit_node);
                 search_iterate = false;
+                search_visited += 1;
                 return "succeeded"
 
             } else {
