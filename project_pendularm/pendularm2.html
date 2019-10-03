@@ -78,7 +78,7 @@ function init() {
     gravity = 9.81;  // Earth gravity
 
     // initialize pendulum PID servo gains
-    pendulum.servo = {kp:0, kd:0, ki:0};  // no control
+    pendulum.servo = {kp:1000, kd:100, ki:100};  // no control
 
     // initialize time and set timestep 
     t = 0;
@@ -97,7 +97,11 @@ function init() {
     servo_active_state = {}; // string with current state of servo activation
 
     //STENCIL: for verlet integration, a first step in time is needed
-
+    // var current_angle = pendulum.angle;
+    // pendulum.angle_previous = current_angle;
+    // pendulum.angle_dot = current_angle;
+    // // x1 = x0 + v0*dt + 1/2*A(x0)*dt^2
+    // pendulum.angle = pendulum.angle + pendulum.angle_dot*dt + .5*pendulum_acceleration(pendulum,gravity)*dt*dt;
     document.addEventListener('keydown', function(e) {
         if (e.keyCode == 88)  // 'x' == 88
            servo_active_persist = !servo_active_persist;
@@ -147,7 +151,14 @@ function animate() {
         pendulum.control += -50.0; // add a motor force to the pendulum motor
 
     // STENCIL: implement servo controller
+    else {
 
+    // var error = pendulum.desired - pendulum.angle;
+
+    // pendulum.control = pendulum.servo.kp * error + pendulum.servo.ki * accumulated_error + pendulum.servo.kd * (-pendulum.angle_dot);
+    // accumulated_error = error + accumulated_error;
+    
+    }
     // toggle activation of servo controller from user interaction
     if (keyboard.pressed("c"))
         servo_active_persist = !servo_active_persist;
@@ -167,6 +178,32 @@ function animate() {
         numerical_integrator = "none";
 
         // STENCIL: a correct integrator is REQUIRED here for this assignment
+    if (numerical_integrator === "euler") {
+        var current_angle = pendulum.angle;
+        pendulum.angle_previous = current_angle;
+        // theta_t+dt = theta_t + thetaDot_t * dt
+        // thetaDot_t+dt = thetaDot_t + theta2Dot_t * dt
+        var angle_2dot = [0,0];
+        // angle_2dot = pendulum_acceleration(pendulum, gravity);
+        // angle_2dot[0] = angle_2dot[0]*dt;
+        // angle_2dot[1] = angle_2dot[1]*dt; 
+
+        // pendulum.angle[0] = (pendulum.angle[0]+pendulum.angle_dot[0])*dt;
+        // pendulum.angle[1] = (pendulum.angle[1]+pendulum.angle_dot[1])*dt;
+
+        // pendulum.angle_dot[0] = pendulum.angle_dot[0]+angle_2dot[0];
+        // pendulum.angle_dot[1] = pendulum.angle_dot[1]+angle_2dot[1];
+    }
+    else if (numerical_integrator == "verlet") {
+
+    }
+    else if (numerical_integrator == "velocity verlet") {
+
+    }
+    else if (numerical_integrator == "runge-kutta") {
+        
+    }
+    else {
 
         pendulum.angle_previous[0] = pendulum.angle[0];
         pendulum.angle[0] = (pendulum.angle[0]+Math.PI/180)%(2*Math.PI);
@@ -175,6 +212,8 @@ function animate() {
         pendulum.angle[1] = (pendulum.angle[1]-Math.PI/180)%(2*Math.PI);
         pendulum.angle_dot[1] = (pendulum.angle[1]-pendulum.angle_previous[1])/dt;
         numerical_integrator = "none";
+
+    } 
 
 
     // set the angles of the pendulum
@@ -229,6 +268,12 @@ function animate() {
     // threejs rendering update
     renderer.render( scene, camera );
 
+}
+
+function pendulum_setangle(theta) {
+    var set_pendulum = pendulum;
+    set_pendulum.angle = theta;
+    return set_pendulum
 }
 
 function pendulum_acceleration(p,g) {
