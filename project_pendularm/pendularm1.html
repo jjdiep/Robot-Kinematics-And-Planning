@@ -10,6 +10,10 @@
     @author ohseejay / https://github.com/ohseejay
                      / https://bitbucket.org/ohseejay
 
+    Implemented by Justin Diep, EECS 567
+    EECS Robotics 2020
+    APTIV Autonomous Vehicle Algorithms Engineer
+
     Chad Jenkins
     Laboratory for Perception RObotics and Grounded REasoning Systems
     University of Michigan
@@ -68,19 +72,19 @@ function init() {
 
     // initialize integral term accumulated error to zero
     accumulated_error = 0;
+    error = 0;
 
     // set gravity
     gravity = 9.81;  // Earth gravity
 
     // initialize pendulum PID servo gains
-    pendulum.servo = {kp:0, kd:0, ki:0};  // no control
-
+    pendulum.servo = {kp:980, kd: 110, ki: 100};  // no control
     // initialize time and set timestep 
     t = 0;
     dt = 0.05;  // default
  
     // initialize method of numerical integration of dynamics
-    //numerical_integrator = "euler";
+    // numerical_integrator = "euler";
     //numerical_integrator = "verlet";
     //numerical_integrator = "velocity verlet";
     //numerical_integrator = "runge-kutta";
@@ -92,7 +96,12 @@ function init() {
     servo_active_state = {}; // string with current state of servo activation
 
     //STENCIL: for verlet integration, a first step in time is needed
-
+    var current_angle = pendulum.angle;
+    pendulum.angle_previous = current_angle;
+    pendulum.angle_dot = current_angle;
+    // x1 = x0 + v0*dt + 1/2*A(x0)*dt^2
+    pendulum.angle = pendulum.angle + pendulum.angle_dot*dt + .5*pendulum_acceleration(pendulum,gravity)*dt*dt;
+    
     document.addEventListener('keydown', function(e) {
         if (e.keyCode == 88)  // 'x' == 88
            servo_active_persist = !servo_active_persist;
@@ -142,7 +151,14 @@ function animate() {
         pendulum.control += -50.0; // add a motor force to the pendulum motor
 
     // STENCIL: implement servo controller
+    else {
 
+    var error = pendulum.desired - pendulum.angle;
+
+    pendulum.control = pendulum.servo.kp * error + pendulum.servo.ki * accumulated_error + pendulum.servo.kd * (-pendulum.angle_dot);
+    accumulated_error = error + accumulated_error;
+    
+    }
     // toggle activation of servo controller from user interaction
     if (keyboard.pressed("c"))
         servo_active_persist = !servo_active_persist;
@@ -164,21 +180,59 @@ function animate() {
     if (numerical_integrator === "euler") {
 
     // STENCIL: a correct Euler integrator is REQUIRED for assignment
-
+        var current_angle = pendulum.angle;
+        pendulum.angle_previous = current_angle;
+        // theta_t+dt = theta_t + thetaDot_t * dt
+        // thetaDot_t+dt = thetaDot_t + theta2Dot_t * dt
+        var angle_2dot = 0;
+        angle_2dot = pendulum_acceleration(pendulum, gravity)*dt;
+        pendulum.angle = pendulum.angle + pendulum.angle_dot * dt;
+        pendulum.angle_dot = pendulum.angle_dot+angle_2dot;
     }
     else if (numerical_integrator === "verlet") {
 
     // STENCIL: basic Verlet integration
 
+    // Initialize Verlet
+        // Iterate angle position
+    var current_angle = pendulum.angle;
+    var angle_2dot = 0;
+    angle_2dot = pendulum_acceleration(pendulum, gravity)*dt*dt;
+
+    pendulum.angle = 2*pendulum.angle - pendulum.angle_previous + angle_2dot
+    pendulum.angle_previous = current_angle;
+    pendulum.angle_dot = (pendulum.angle - pendulum.angle_previous)/(2*dt) + 0 // O(t^4) approximately 0 initially with small angle
+
     }
     else if (numerical_integrator === "velocity verlet") {
 
     // STENCIL: a correct velocity Verlet integrator is REQUIRED for assignment
-
+        var current_angle = pendulum.angle;
+        pendulum.angle_previous = current_angle;
+        var p_accel_t = pendulum_acceleration(pendulum,gravity);
+        pendulum.angle = pendulum.angle_previous + pendulum.angle_dot*dt + .5*p_accel_t*dt*dt;
+        var p_accel_tdt = pendulum_acceleration(pendulum,gravity);
+        pendulum.angle_dot = pendulum.angle_dot + (p_accel_t + p_accel_tdt)/2*dt; 
     }
     else if (numerical_integrator === "runge-kutta") {
 
     // STENCIL: Runge-Kutta 4 integrator
+        var current_angle = pendulum.angle;
+        pendulum.angle_previous = current_angle;
+        var kx1 = pendulum.angle;
+        var kv1 = pendulum.angle_dot;
+        var kx2 = kx1 + (.5 * kv1 * dt);
+        var kv2 = kv1 + (.5 * pendulum_acceleration(pendulum_setangle(kx1),gravity) * dt);
+        var kx3 = kx1 + (.5 * kv2 * dt);
+        var kv3 = kv1 + (.5 * pendulum_acceleration(pendulum_setangle(kx2),gravity) * dt);
+        var kx4 = kx1 + (1 * kv3 * dt);
+        var kv4 = kv1 + (1 * pendulum_acceleration(pendulum_setangle(kx3),gravity) * dt);
+        pendulum.angle = pendulum.angle_previous+dt*(1/6*kv1+1/3*kv2+1/3*kv3+1/6*kv4);
+        a_kx1 = pendulum_acceleration(pendulum_setangle(kx1),gravity);
+        a_kx2 = pendulum_acceleration(pendulum_setangle(kx2),gravity);
+        a_kx3 = pendulum_acceleration(pendulum_setangle(kx3),gravity);
+        a_kx4 = pendulum_acceleration(pendulum_setangle(kx4),gravity);
+        pendulum.angle_dot = pendulum.angle_dot+dt*(1/6*a_kx1+1/3*a_kx2+1/3*a_kx3+1/6*a_kx4);
     } 
     else {
         pendulum.angle_previous = pendulum.angle;
@@ -237,8 +291,21 @@ function animate() {
 
 }
 
+function pendulum_setangle(theta) {
+    var set_pendulum = pendulum;
+    set_pendulum.angle = theta;
+    return set_pendulum
+}
+
 function pendulum_acceleration(p,g) {
-    // STENCIL: return acceleration(s) system equation(s) of motion 
+    // STENCIL: return acceleration(s) system equation(s) of motion
+    // p is angle, g is torque
+    pendulum_mass = p.mass;
+    pendulum_length = p.length;
+    pendulum_angle = p.angle;
+    tau = p.control;
+    var theta_2dot = -g/pendulum_length*Math.sin(pendulum_angle)+tau/(pendulum_mass*pendulum_length*pendulum_length);
+    return theta_2dot 
 }
 
 function createScene() {
