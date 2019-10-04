@@ -1,4 +1,4 @@
-14: Diep, Justin
+3: Bi, Kevin
 567 EECS F19
 
 Assignment 1 feature 1 (0.00/0): PathPlan_Honor: DUE
