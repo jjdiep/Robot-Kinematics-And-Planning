@@ -70,7 +70,7 @@ function matrix_multiply(m1, m2) {
         return mat;
     } else {
         var f_fail_multiply = true;
-        return 0; // not dimensionally correct
+        return null; // not dimensionally correct
     }
 }
 
@@ -88,27 +88,89 @@ function matrix_zeroes(m, n) {
 }
     //   matrix_transpose
 function matrix_transpose(m1) {
-
+    var f_m1_row, f_m2_row;
+    
+    if (m1[0].length == null) {
+        f_m1_row = true; 
+        m1_col_len = m1.length;
+        m1_row_len = 1;
+    } else {
+        m1_col_len = m1[0].length;
+        m1_row_len = m1.length;
+    }
+    var mat;
+    mat = matrix_zeroes(m1_col_len,m1_row_len);
+    var i_init, j_init;
+    for (i_init=0;i_init<m1_row_len;i_init++) {
+        for (j_init=0;j_init<m1_col_len;j_init++) {
+            if (f_m1_row) {
+                mat[j_init][i_init] = m1[j_init];
+            } else {
+                mat[j_init][i_init] = m1[i_init][j_init];
+            }
+        }
+    }
+    return mat;
 }
 
     //   matrix_pseudoinverse
 function matrix_pseudoinverse(m1) {
+    
+    var m1_T;
+    var mat;
+    var f_m1_row, f_m2_row;
 
+    m1_T = matrix_transpose(m1);
+
+    if (m1[0].length == null) {
+        f_m1_row = true; 
+        m1_col_len = m1.length;
+        m1_row_len = 1;
+    } else {
+        m1_col_len = m1[0].length;
+        m1_row_len = m1.length;
+    }
+    if (m1_col_len == m1_row_len) { // square
+        mat = numeric.inv(m1);
+    } else if (m1_col_len > m1_row_len) { // broad
+        mat = matrix_multiply( m1_T, numeric.inv( matrix_multiply(m1, m1_T) ) );
+    } else { // tall 
+        mat = matrix_multiply( numeric.inv( matrix_multiply(m1_T, m1) ), m1_T );
+    }
+
+    return mat; 
 }
 
     //   matrix_invert_affine
 function matrix_invert_affine(m1) {
+    var m1_r, m1_t, m1_rt, m1_tt;
+    var m1_affine_inv;
 
+    m1_r = [[m1[0][0],m1[0][1],m1[0][2],0],[m1[1][0],m1[1][1],m1[1][2],0],[m1[2][0],m1[2][1],m1[2][2],0],[0,0,0,1]];
+    m1_t = [[1,0,0,m1[0][3]],[0,1,0,m1[1][3]],[0,0,1,m1[2][3]],[0,0,0,1]];
+    m1_rt = matrix_transpose(m1_r);
+    m1_tt = [[1,0,0,-m1[0][3]],[0,1,0,-m1[1][3]],[0,0,1,-m1[2][3]],[0,0,0,1]];
+    m1_affine_inv = matrix_multiply(m1_rt,m1_tt);
+    return m1_affine_inv;
 }
 
     //   vector_normalize
 function vector_normalize(v1) {
-
+    var vd, vn;
+    vd = v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2];
+    vn = [v1[0]/Math.sqrt(vd),v1[1]/Math.sqrt(vd),v1[2]/Math.sqrt(vd)];
+    return vn;
 }
 
     //   vector_cross
 function vector_cross(v1,v2) {
-
+    var vc;
+    var cx, cy, cz;
+    cx = v1[1]*v2[2] - v1[2]*v2[1];
+    cy = v1[2]*v2[0] - v1[0]*v2[2];
+    cz = v1[0]*v2[1] - v1[1]*v2[0];
+    vc = [cx,cy,cz];
+    return vc;
 }
 
     //   generate_identity
@@ -154,6 +216,7 @@ function generate_rotation_matrix_Y(theta) {
     mat[0][2] = Math.sin(theta);
     mat[2][0] = -Math.sin(theta);
     mat[2][2] = Math.cos(theta);
+    return mat;
 }
 
     //   generate_rotation_matrix_Z
@@ -163,4 +226,5 @@ function generate_rotation_matrix_Z(theta) {
     mat[0][1] = -Math.sin(theta);
     mat[1][0] = Math.sin(theta);
     mat[1][1] = Math.cos(theta);
+    return mat;
 }

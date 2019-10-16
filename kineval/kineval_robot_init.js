@@ -5,7 +5,7 @@
      in HTML5/JavaScript and threejs
      
      @author ohseejay / https://github.com/ohseejay / https://bitbucket.org/ohseejay
-
+    Implemented by Justin Diep
 */
 
 kineval.initRobot = function initRobot() {
@@ -27,6 +27,13 @@ kineval.initRobotLinks = function initRobotLinks() {
 
     for (x in robot.links) {
         robot.links[x].name = x;
+
+        //Additional information added 
+        //A link can have only one parent joint
+        robot.links[x].parent_joint = "";
+
+        //A link can have multiple child joints
+        robot.links[x].child_joints = [];
     }
 
     // initialize controls for robot base link
@@ -40,7 +47,6 @@ kineval.initRobotJoints = function initRobotJoints() {
     // NOTE: kinematic hierarchy is maintained independently by this code, not threejs
 
     var x,tempmat;
-
     for (x in robot.joints) {
 
         // give the joint its name as an id
@@ -59,6 +65,11 @@ kineval.initRobotJoints = function initRobotJoints() {
     //   robot description only specifies parent and child links for joints.
     //   additionally specify parent and child joints for each link
 
+        var parent_link = robot.joints[x].parent;
+        var child_link = robot.joints[x].child;
+
+        robot.links[parent_link].child_joints.push(x);
+        robot.links[child_link].parent_joint = x;
     }
 
 }

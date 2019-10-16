@@ -7,17 +7,26 @@ My Linear Algebra Library Test
 
 <script src="kineval_matrix.js"></script>
 
+<script src="../js/numeric-1.2.6.js"></script>
 <script>
 
 test();
 
 function test() {
-    var m1 = [[1, 0, 1],[1, 0, 1]];
+    var m1 = [[1, 2],[1, 1],[1, 1]];
     var m2 = [[1,1],[0,0],[1,1]];
+    var m3 = []
     var m_copy = matrix_copy(m1);
     var m_multiply = matrix_multiply(m1,m2);
-    var m_identity = generate_identity(3);  
+    var m_identity = generate_identity(3);
+    var m_transpose = matrix_transpose(m1);
+    var m_pseudoinv = matrix_pseudoinverse(m1);
+    var m_affineinv = matrix_invert_affine(m3);
     console.log(m_multiply);
+    console.log(m_identity);
+    console.log(m_transpose);
+    console.log(m_pseudoinv);
+    // console.log(m_multiply);
 }
 
 </script>

@@ -102,7 +102,9 @@
 // set KinEval user parameter defaults
 var url_params = {
     // load robot data object from given source file name
-    robot:"robots/robot_mr2.js",
+    // robot:"robots/robot_mr2.js",
+    robot:"robots/baxter/baxter.urdf.js",
+    // robot:"robots/robot_urdf_example.js",
     // load world data object from given source file name
     world:"worlds/world_local_minima.js",
     // specify floor/map image from given image file name
@@ -110,7 +112,9 @@ var url_params = {
 };
 
 // preload default robot and world 
-kineval.loadJSFile("robots/robot_mr2.js","robot");
+// kineval.loadJSFile("robots/robot_mr2.js","robot");
+// kineval.loadJSFile("robots/robot_urdf_example.js","robot");
+kineval.loadJSFile("robots/baxter/baxter.urdf.js","robot");
 kineval.loadJSFile("worlds/world_local_minima.js","world");
 //kineval.loadJSFile("worlds/world_empty.js","world");
 
