@@ -30,10 +30,10 @@ kineval.initRobotLinks = function initRobotLinks() {
 
         //Additional information added 
         //A link can have only one parent joint
-        robot.links[x].parent_joint = "";
+        robot.links[x].parent = "";
 
         //A link can have multiple child joints
-        robot.links[x].child_joints = [];
+        robot.links[x].children = [];
     }
 
     // initialize controls for robot base link
@@ -68,8 +68,8 @@ kineval.initRobotJoints = function initRobotJoints() {
         var parent_link = robot.joints[x].parent;
         var child_link = robot.joints[x].child;
 
-        robot.links[parent_link].child_joints.push(x);
-        robot.links[child_link].parent_joint = x;
+        robot.links[parent_link].children.push(x);
+        robot.links[child_link].parent = x;
     }
 
 }

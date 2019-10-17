@@ -54,6 +54,12 @@ kineval.traverseFKBase = function traverseFKBase (mat) {
     var t_rpy = robot.origin.rpy;
     var t_xyz = robot.origin.xyz;
     var base_transform = kineval.get_transformation_matrix(t_xyz,t_rpy);
+    // need to set only for ROS robots for transform to threejs coordinate frame
+    if (robot.links_geom_imported === true) {
+
+        var ros_transform = matrix_multiply(generate_rotation_matrix_X(-Math.PI/2),generate_rotation_matrix_Z(-Math.PI/2));
+        base_transform = matrix_multiply(base_transform,ros_transform);
+    }
     robot_heading = matrix_multiply(base_transform,init_z);
     robot_lateral = matrix_multiply(base_transform,init_x);
     FKBaseTransform = matrix_multiply(mat, base_transform);
@@ -63,14 +69,14 @@ kineval.traverseFKBase = function traverseFKBase (mat) {
 
 kineval.traverseFKLink = function traverseFKLink (link,mat) {
     var link_object = robot.links[link];
-    var link_children = link_object.child_joints;
+    var link_children = link_object.children;
 
     if(link === robot.base) {
         link_object.xform = robot.origin.xform;
     }
     // Originates from a joint. xform is the same as parent's xform
     else {
-        var parent_joint = link_object.parent_joint;
+        var parent_joint = link_object.parent;
         var parent_xform = robot.joints[parent_joint].xform;
 
         // Link shares xform matrix with parent joint
@@ -105,7 +111,7 @@ kineval.get_transformation_matrix = function get_transformation_matrix (xyz,rpy)
     var pitch_transform = generate_rotation_matrix_Y(rpy[1]);
     var yaw_transform = generate_rotation_matrix_Z(rpy[2]);
 
-    var rotation_matrix = matrix_multiply(matrix_multiply(roll_transform,pitch_transform),yaw_transform);
+    var rotation_matrix = matrix_multiply(matrix_multiply(yaw_transform,pitch_transform),roll_transform);
 
     var transformation_matrix = matrix_multiply(translation_matrix,rotation_matrix);
 

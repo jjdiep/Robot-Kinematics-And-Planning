@@ -612,7 +612,7 @@ kineval.initRobotLinksGeoms = function initRobotLinksGeoms() {
         // KE 2 : create global color constants
         if (typeof robot.links_geom_imported === "undefined")
             robot.links[x].geom = new THREE.Mesh( links_geom[x], robot_material);
-        else if (!robot.links_geom_imported)
+        else if (!robot.links_geom_imported || robot.name === "pi_robot") // slightly modified since PI robot is technically from ROS (and heavily modified) but lacks THREE.Mesh
             robot.links[x].geom = new THREE.Mesh( links_geom[x], robot_material);
         else
             robot.links[x].geom = links_geom[x];
