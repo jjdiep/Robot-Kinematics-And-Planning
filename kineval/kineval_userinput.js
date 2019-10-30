@@ -98,6 +98,7 @@ kineval.handleUserInput = function user_input() {
  
     // execute PID controller to clock
     if ( keyboard.pressed("c") ) {
+        // kineval.params.update_pd = true;
         kineval.params.update_pd = true;
         kineval.params.update_pd_clock = true;
     }

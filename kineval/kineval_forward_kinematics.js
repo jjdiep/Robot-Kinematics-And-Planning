@@ -54,12 +54,20 @@ kineval.traverseFKBase = function traverseFKBase (mat) {
     var t_rpy = robot.origin.rpy;
     var t_xyz = robot.origin.xyz;
     var base_transform = kineval.get_transformation_matrix(t_xyz,t_rpy);
+
+    robot_heading = matrix_copy(init_z);
+    robot_lateral = matrix_copy(init_x);
+
     // need to set only for ROS robots for transform to threejs coordinate frame
     if (robot.links_geom_imported === true) {
 
         var ros_transform = matrix_multiply(generate_rotation_matrix_X(-Math.PI/2),generate_rotation_matrix_Z(-Math.PI/2));
+        init_z = matrix_transpose([1,0,0,1]);
+        init_x = matrix_transpose([0,1,0,1]);
         base_transform = matrix_multiply(base_transform,ros_transform);
+
     }
+
     robot_heading = matrix_multiply(base_transform,init_z);
     robot_lateral = matrix_multiply(base_transform,init_x);
     FKBaseTransform = matrix_multiply(mat, base_transform);
@@ -94,8 +102,17 @@ kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
     var joint_object = robot.joints[joint];
     var joint_xyz = joint_object.origin.xyz;
     var joint_rpy = joint_object.origin.rpy;
+    var joint_axis = joint_object.axis;
+    var joint_angle = joint_object.angle;
+
     var trans_mtx = kineval.get_transformation_matrix (joint_xyz, joint_rpy);
-    var joint_mtx = matrix_multiply(mat, trans_mtx);
+    var joint_mtx_def = matrix_multiply(mat, trans_mtx);
+    // checkJointLimits(joint_type,joint_limit_upper,joint_limit_lower,joint_axis,joint_angle);
+    // if joint_type is prismatic then create translation matrix, else controlFKJointAngle
+    var control_joint_mtx = kineval.checkJointLimits(joint_object, joint_axis, joint_angle)
+
+    // var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,joint_angle);
+    var joint_mtx = matrix_multiply(joint_mtx_def,control_joint_mtx);
     joint_object.xform = joint_mtx;
     kineval.traverseFKLink(joint_object.child, joint_mtx);
     inv_trans_mtx = matrix_invert_affine(trans_mtx);
@@ -104,6 +121,52 @@ kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
     return prior_joint_mtx;
 }
 
+kineval.controlFKJointAngle = function controlFKJointAngle(joint_axis,joint_angle) {
+
+    var joint_quaternion = quaternion_from_axisangle(joint_axis,joint_angle);
+    var unit_joint_quaternion = quaternion_normalize(joint_quaternion);
+    var control_transformation_matrix = quaternion_to_rotation_matrix(unit_joint_quaternion);
+    return control_transformation_matrix;
+}
+
+kineval.checkJointLimits = function checkJointLimits(joint_object, joint_axis, joint_angle) {
+    var joint_type = joint_object.type;
+    // var joint_limit_upper = joint_object.limit.upper;
+    // var joint_limit_lower = joint_object.limit.lower;
+
+    if (joint_type === "prismatic") {
+        if (joint_angle > joint_object.limit.upper) { // apply saturation to joint limits in translation
+            var control_angle = joint_object.limit.upper;
+        } else if (joint_angle < joint_object.limit.lower) {
+            var control_angle = joint_object.limit.lower;
+        } else {
+            var control_angle = joint_angle; // note: actually is translation
+        } 
+        var xyz_control = [joint_axis[0] * control_angle, joint_axis[1] * control_angle, joint_axis[2] * control_angle];
+        var rpy_control = [0,0,0];
+        var control_joint_mtx = kineval.get_transformation_matrix(xyz_control, rpy_control);
+    }
+    else if (joint_type === "revolute") { // apply saturation to joint limit in rotation
+        if (joint_angle > joint_object.limit.upper) { // apply saturation to joint limits in rotation
+            var control_angle = joint_object.limit.upper;
+        } else if (joint_angle < joint_object.limit.lower) {
+            var control_angle = joint_object.limit.lower;
+        } else {
+            var control_angle = joint_angle;
+        } 
+        var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,control_angle);
+    }
+    else if (joint_type === "fixed") { // no control allowed of fixed joint
+        var control_angle = 0;
+        var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,control_angle);
+    }
+    else { // assumed to be continuous by default, no joint limits
+        var control_angle = joint_angle;
+        var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,control_angle);
+    }
+
+    return control_joint_mtx;
+}
 kineval.get_transformation_matrix = function get_transformation_matrix (xyz,rpy) {
     var translation_matrix = generate_translation_matrix(xyz[0],xyz[1],xyz[2]);
 
