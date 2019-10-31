@@ -11,7 +11,11 @@
     Chad Jenkins
     Laboratory for Perception RObotics and Grounded REasoning Systems
     University of Michigan
-
+    
+    Implemented by Justin Diep
+    EECS 567
+    University of Michigan
+    
     License: Creative Commons 3.0 BY-SA
 
 |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| |\/| --*/
@@ -131,8 +135,6 @@ kineval.controlFKJointAngle = function controlFKJointAngle(joint_axis,joint_angl
 
 kineval.checkJointLimits = function checkJointLimits(joint_object, joint_axis, joint_angle) {
     var joint_type = joint_object.type;
-    // var joint_limit_upper = joint_object.limit.upper;
-    // var joint_limit_lower = joint_object.limit.lower;
 
     if (joint_type === "prismatic") {
         if (joint_angle > joint_object.limit.upper) { // apply saturation to joint limits in translation
@@ -160,7 +162,7 @@ kineval.checkJointLimits = function checkJointLimits(joint_object, joint_axis, j
         var control_angle = 0;
         var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,control_angle);
     }
-    else { // assumed to be continuous by default, no joint limits
+    else { // assumed joint_type === "continuous" by default, no joint limits
         var control_angle = joint_angle;
         var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,control_angle);
     }

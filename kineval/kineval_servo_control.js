@@ -31,15 +31,6 @@ kineval.setpointDanceSequence = function execute_setpoints() {
         song.play();
     }
 
-    kineval.params.dance_sequence_index = [0,1,0,1,0,1,0,1,0,1];
-
-    kineval.setpoints = [{"torso_lift_joint":0,"shoulder_pan_joint":0,"shoulder_lift_joint":0,"upperarm_roll_joint":0,"elbow_flex_joint":0,"forearm_roll_joint":0,"wrist_flex_joint":0,"wrist_roll_joint":0,"gripper_axis":0,"head_pan_joint":0,"head_tilt_joint":0,"torso_fixed_joint":0,"r_wheel_joint":0,"l_wheel_joint":0,"r_gripper_finger_joint":0,"l_gripper_finger_joint":0,"bellows_joint":0,"bellows_joint2":0,"estop_joint":0,"laser_joint":0},
-    {"torso_lift_joint":1.2000000000000008,"shoulder_pan_joint":0.3300000000000001,"shoulder_lift_joint":-0.5800000000000003,"upperarm_roll_joint":0,"elbow_flex_joint":0,"forearm_roll_joint":0,"wrist_flex_joint":0,"wrist_roll_joint":0,"gripper_axis":0,"head_pan_joint":0,"head_tilt_joint":0,"torso_fixed_joint":0,"r_wheel_joint":0,"l_wheel_joint":0,"r_gripper_finger_joint":0,"l_gripper_finger_joint":0,"bellows_joint":0,"bellows_joint2":0,"estop_joint":0,"laser_joint":0}]
-    
-
-
-
-
     setTimeout(function() {
         if (kineval.params.dance_pose_index >= kineval.params.dance_sequence_index.length) {
             kineval.params.dance_pose_index = 0;
@@ -50,7 +41,7 @@ kineval.setpointDanceSequence = function execute_setpoints() {
             kineval.params.setpoint_target[j] = kineval.setpoints[dance_pose_index][j];
         }
         ++kineval.params.dance_pose_index;
-        kineval.timer += 1000;
+        kineval.timer += 2000;
     }, kineval.timer);
 }
 

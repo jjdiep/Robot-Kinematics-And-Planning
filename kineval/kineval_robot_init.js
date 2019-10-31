@@ -57,7 +57,7 @@ kineval.initRobotJoints = function initRobotJoints() {
         robot.joints[x].control = 0;
         robot.joints[x].servo = {};
     // STENCIL: set appropriate servo gains for arm setpoint control
-        robot.joints[x].servo.p_gain = .08; 
+        robot.joints[x].servo.p_gain = .2; 
         robot.joints[x].servo.p_desired = 0;
         robot.joints[x].servo.d_gain = 0; 
 
