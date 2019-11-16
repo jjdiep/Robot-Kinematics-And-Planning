@@ -34,11 +34,36 @@ kineval.applyControls = function robot_apply_controls(curRobot) {
         }
 
     // STENCIL: enforce joint limits for prismatic and revolute joints
-
-
-        // clear controls back to zero for next timestep
-        curRobot.joints[x].control = 0;
-    }
+        var joint_object = curRobot.joints[x];
+        var joint_angle = curRobot.joints[x].angle;
+        if (curRobot.joints[x].type === "prismatic") {
+            if (joint_angle > joint_object.limit.upper) { // apply saturation to joint limits in translation
+                var control_angle = joint_object.limit.upper;
+            } else if (joint_angle < joint_object.limit.lower) {
+                var control_angle = joint_object.limit.lower;
+            } else {
+                var control_angle = joint_angle; // note: actually is translation
+            }
+        }
+        else if (curRobot.joints[x].type === "revolute") { // apply saturation to joint limit in rotation
+            if (joint_angle > joint_object.limit.upper) { // apply saturation to joint limits in rotation
+                var control_angle = joint_object.limit.upper;
+            } else if (joint_angle < joint_object.limit.lower) {
+                var control_angle = joint_object.limit.lower;
+            } else {
+                var control_angle = joint_angle;
+            }
+        }
+        else if (curRobot.joints[x].type === "fixed") { // no control allowed of fixed joint
+            var control_angle = 0;
+        }
+        else { // assumed joint_type === "continuous" by default, no joint limits
+            var control_angle = joint_angle;
+        }
+            curRobot.joints[x].angle = control_angle;
+            // clear controls back to zero for next timestep
+            curRobot.joints[x].control = 0;
+        }
 
 //console.log(curRobot); 
     // base motion

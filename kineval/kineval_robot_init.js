@@ -20,7 +20,7 @@ kineval.initRobot = function initRobot() {
 
     // initialize robot collision state
     robot.collision = false;
-
+    // last_rpy = [];
 }
 
 kineval.initRobotLinks = function initRobotLinks() {

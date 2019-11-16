@@ -88,25 +88,30 @@ function matrix_zeroes(m, n) {
 }
     //   matrix_transpose
 function matrix_transpose(m1) {
-    var f_m1_row, f_m2_row;
-    
+
     if (m1[0].length == null) {
-        f_m1_row = true; 
+        var f_m1_row = true; 
         m1_col_len = m1.length;
         m1_row_len = 1;
     } else {
         m1_col_len = m1[0].length;
         m1_row_len = m1.length;
     }
-    var mat;
-    mat = matrix_zeroes(m1_col_len,m1_row_len);
-    var i_init, j_init;
-    for (i_init=0;i_init<m1_row_len;i_init++) {
-        for (j_init=0;j_init<m1_col_len;j_init++) {
-            if (f_m1_row) {
-                mat[j_init][i_init] = m1[j_init];
-            } else {
-                mat[j_init][i_init] = m1[i_init][j_init];
+    if (m1_col_len === 1) { // for proper row vector transpose
+        var mat = [];
+        for (var i_init=0;i_init<m1_row_len;i_init++) {
+            mat.push(m1[i_init][0]);
+        }
+
+    } else {
+        var mat = matrix_zeroes(m1_col_len,m1_row_len);
+        for (var i_init=0;i_init<m1_row_len;i_init++) {
+            for (var j_init=0;j_init<m1_col_len;j_init++) {
+                if (f_m1_row) {
+                    mat[j_init][i_init] = m1[j_init];
+                } else {
+                    mat[j_init][i_init] = m1[i_init][j_init];
+                }
             }
         }
     }
@@ -227,4 +232,95 @@ function generate_rotation_matrix_Z(theta) {
     mat[1][0] = Math.sin(theta);
     mat[1][1] = Math.cos(theta);
     return mat;
+}
+
+function vector_subtract(v1,v2) {
+    var v_diff = [];
+    // Check if vector is same length!
+    if (v1.length === v2.length) {
+        for (var i = 0; i < v1.length; i++) {
+            var diff = v1[i] - v2[i];
+            v_diff.push(diff);
+        }  
+    } else {
+        
+        return null;
+    }
+
+    return v_diff;
+}
+
+function vector_add(v1,v2) {
+    var v_sum = [];
+    // Check if vector is same length!
+    if (v1.length === v2.length) {
+        for (var i = 0; i < v1.length; i++) {
+            var sum = v1[i] - v2[i];
+            v_sum.push(sum);
+        }  
+    } else {
+
+        return null;
+    }
+
+    return v_sum;
+}
+
+function matrix_append_vector(m1,v1) {
+    // var mat = matrix_zeroes(v1.length,m1[0].length+1);
+    if (m1.length == 0) {
+        m1 = v1;
+    } else {
+        if (m1.length == v1.length) {
+            for (var i = 0; i < v1.length; i++) {
+                m1[i].push(v1[i][0]);
+            }
+        } else {
+            return null;
+        }
+    }
+    return m1; 
+}
+
+function scalar_multiply(s1,v1) {
+    var vec = [];
+    for (var i = 0; i < v1.length; i++) {
+        vec.push(s1*v1[i]);
+    }
+    return vec;
+}
+
+function extract_euler_angles(m1) {
+    // My implementation of "Computing Euler angles from a rotation matrix" by Gregory G. Slabaugh
+    var theta_1, theta_2, psi_1, psi_2, phi_1, phi_2;
+    // Version 1
+    if (Math.abs(m1[2][0]) !== 1) {
+        theta_1 = -Math.asin(m1[2][0]);
+        theta_2 = Math.PI - theta_1;
+        psi_1 = Math.atan2(m1[2][1]/Math.cos(theta_1),m1[2][2]/Math.cos(theta_1));
+        psi_2 = Math.atan2(m1[2][1]/Math.cos(theta_2),m1[2][2]/Math.cos(theta_2));
+        phi_1 = Math.atan2(m1[1][0]/Math.cos(theta_1),m1[0][0]/Math.cos(theta_1));
+        phi_2 = Math.atan2(m1[1][0]/Math.cos(theta_2),m1[0][0]/Math.cos(theta_2));
+
+    } else {    // Gimbal Lock case
+        phi_1 = 0;
+        if (m1[2][0] == -1) {
+            theta_1 = Math.PI/2;
+            psi_1 = phi_1 + Math.atan2(m1[0][1],m1[0][2]);
+        } else {
+            theta_1 = -Math.PI/2;
+            psi_1 = -phi_1 + Math.atan2(-m1[0][1],-m1[0][2]);
+        }
+    }
+    var rpy = [psi_1, theta_1, phi_1];
+
+    // Version 2
+    // theta_1 = Math.atan2(m1[1][2],m1[2][2]);
+    // c_2 = Math.sqrt(m1[0][0]*m1[0][0] + m1[0][1]*m1[0][1]);
+    // psi_1 = Math.atan2(-m1[0][2],c_2); 
+    // s_1 = Math.sin(theta_1);
+    // c_1 = Math.cos(theta_1);
+    // phi_1 = Math.atan2(s_1*m1[2][0]-c_1*m1[1][0],c_1*m1[1][1]-s_1*m1[2][1]);
+    // var rpy = [theta_1, psi_1, phi_1]; 
+    return rpy;
 }

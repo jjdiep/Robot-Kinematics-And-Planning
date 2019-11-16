@@ -47,14 +47,13 @@ kineval.robotForwardKinematics = function robotForwardKinematics () {
 
 kineval.buildFKTransforms = function buildFKTransforms () {
     var init_mtx = generate_identity(4);
-    // var base_link = robot.links[robot.base];
     var FKBase_mtx = kineval.traverseFKBase(init_mtx);
-    var FKLink_mtx = kineval.traverseFKLink(robot.base,FKBase_mtx);
+    kineval.traverseFKLink(robot.base,FKBase_mtx);
 }
 
 kineval.traverseFKBase = function traverseFKBase (mat) { 
-    var init_z = matrix_transpose([0,0,1,1]);
-    var init_x = matrix_transpose([1,0,0,1]);
+    init_z = matrix_transpose([0,0,1,1]);
+    init_x = matrix_transpose([1,0,0,1]);
     var t_rpy = robot.origin.rpy;
     var t_xyz = robot.origin.xyz;
     var base_transform = kineval.get_transformation_matrix(t_xyz,t_rpy);
@@ -75,7 +74,7 @@ kineval.traverseFKBase = function traverseFKBase (mat) {
     robot_heading = matrix_multiply(base_transform,init_z);
     robot_lateral = matrix_multiply(base_transform,init_x);
     FKBaseTransform = matrix_multiply(mat, base_transform);
-    robot.origin.xform = base_transform;
+    robot.origin.xform = matrix_copy(base_transform);
     return FKBaseTransform;
 }
 
@@ -84,21 +83,21 @@ kineval.traverseFKLink = function traverseFKLink (link,mat) {
     var link_children = link_object.children;
 
     if(link === robot.base) {
-        link_object.xform = robot.origin.xform;
+        link_object.xform = matrix_copy(robot.origin.xform);
     }
     // Originates from a joint. xform is the same as parent's xform
     else {
         var parent_joint = link_object.parent;
-        var parent_xform = robot.joints[parent_joint].xform;
+        var parent_xform = matrix_copy(robot.joints[parent_joint].xform);
 
         // Link shares xform matrix with parent joint
-        link_object.xform = parent_xform;
+        link_object.xform = matrix_copy(parent_xform);
     }
 
     var FKMtx = matrix_copy(mat) 
-    for(var i = 0; i < link_children.length; ++i) {
+    for(var i = 0; i < link_children.length; i++) {
         var FK_undone = kineval.traverseFKJoint(link_children[i],FKMtx);
-        FKMtx = FK_undone;
+        FKMtx = matrix_copy(FK_undone);
     } 
 }
 
@@ -114,10 +113,11 @@ kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
     // checkJointLimits(joint_type,joint_limit_upper,joint_limit_lower,joint_axis,joint_angle);
     // if joint_type is prismatic then create translation matrix, else controlFKJointAngle
     var control_joint_mtx = kineval.checkJointLimits(joint_object, joint_axis, joint_angle)
+    // control_joint_mtx = joint_mtx_def;
 
     // var control_joint_mtx = kineval.controlFKJointAngle(joint_axis,joint_angle);
     var joint_mtx = matrix_multiply(joint_mtx_def,control_joint_mtx);
-    joint_object.xform = joint_mtx;
+    joint_object.xform = matrix_copy(joint_mtx);
     kineval.traverseFKLink(joint_object.child, joint_mtx);
     inv_trans_mtx = matrix_invert_affine(trans_mtx);
     var prior_joint_mtx = matrix_multiply(joint_mtx, inv_trans_mtx); 
