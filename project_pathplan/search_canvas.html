@@ -18,7 +18,10 @@
     Chad Jenkins
     Laboratory for Perception RObotics and Grounded REasoning Systems
     University of Michigan
-
+    
+    Implemented by Justin Diep for EECS 567
+    For Assignments 1 (Graph-Based Search) and 6 (Sample-Based Search)
+    
     License: Michigan Honor License 
 
     Usage: planner will start upon browser loading this file, with execution 
@@ -76,8 +79,8 @@ function initSearch() {
     // search_alg = "depth-first";  
     // search_alg = "breadth-first";  
     // search_alg = "greedy-best-first";  
-    search_alg = "A-star";  
-    // search_alg = "RRT";  
+    // search_alg = "A-star";  
+    search_alg = "RRT";  
     // search_alg = "RRT-connect";  
     // search_alg = "RRT-star";  
 
@@ -139,13 +142,13 @@ function initSearch() {
     // set the world for the planner 
     setPlanningScene();
 
-    // initialize search tree from start configurations (RRT-based algorithms)
-    T_a = initRRT(q_init);
-    // also initialize search tree from goal configuration (RRT-Connect)
-    T_b = initRRT(q_goal);
-
     // initialize graph search algorithms (DFS, BFS, A-star) 
     initSearchGraph();
+
+    // initialize search tree from start configurations (RRT-based algorithms), changed for my implementation JD
+    T_a = initRRT(start_node);
+    // also initialize search tree from goal configuration (RRT-Connect)
+    T_b = initRRT(end_node);
 
     // flag to continue or stop search iterations
     search_iterate = true;
@@ -450,6 +453,28 @@ function iterateRRT() {
     //   insertTreeVertex - adds and displays new configuration vertex for a tree
     //   insertTreeEdge - adds and displays new tree edge between configurations
     //   drawHighlightedPath - renders a highlighted path in a tree
+    
+    // start_Tree = T_a
+    var q_random = randomConfig();
+    var ext_flag = extendRRT(T_a,q_random);
+    while (ext_flag === "advanced") {
+        ext_flag = extendRRT(T_a,q_random);
+    } 
+    var q_new_array = [rrt_q_new.x,rrt_q_new.y];
+    var q_goal_array = [end_node.x,end_node.y];
+    if (ext_flag === "trapped") {
+        return "failed";
+    } else if (isEqualArray(q_new_array,q_goal_array)) {
+        search_iterate = false;
+        var found = false;
+        destination_node = T_a.vertices[0].vertex;
+        var path = [];
+        found = dfsPath(T_a,T_a.vertices[T_a.newest],false,path);
+        var final_path = path.reverse();
+        drawHighlightedPath(final_path);
+        return "succeeded";
+    }
+
 }
 
 function iterateRRTConnect() {
@@ -470,6 +495,9 @@ function iterateRRTConnect() {
     //   insertTreeVertex - adds and displays new configuration vertex for a tree
     //   insertTreeEdge - adds and displays new tree edge between configurations
     //   drawHighlightedPath - renders a highlighted path in a tree
+
+    // start_Tree = T_a
+    // end_Tree = T_b
 }
 
 function iterateRRTStar() {
@@ -583,6 +611,12 @@ function initSearchGraph() { // Assignment 1
                     G[iind][jind].distance = 0;
                     visit_node = G[iind][jind];
                     neighbor_queue.push(G[iind][jind]);
+                    start_node = G[iind][jind];
+                }
+            }
+            if ( (Math.abs(q_goal[0] - xpos) <= eps/2) && (Math.abs(q_goal[1] - ypos) <= eps/2) ) {
+                if (!testCollision([G[iind][jind].x,G[iind][jind].y])) {
+                    end_node = G[iind][jind];
                 }
             }
         }
@@ -686,7 +720,7 @@ function insertTreeVertex(tree,q) {
     tree.newest = tree.vertices.length - 1;
 
     // draw location on canvas
-    draw_2D_configuration(q);
+    draw_2D_configuration([q.x,q.y]);
 }
 
 function draw_2D_configuration(q) {
@@ -716,7 +750,8 @@ function insertTreeEdge(tree,q1_idx,q2_idx) {
     tree.vertices[q2_idx].edges.push(tree.vertices[q1_idx]);
 
     // draw edge on canvas
-    draw_2D_edge_configurations(tree.vertices[q1_idx].vertex,tree.vertices[q2_idx].vertex); 
+    draw_2D_edge_configurations([tree.vertices[q1_idx].vertex.x,tree.vertices[q1_idx].vertex.y],
+                                [tree.vertices[q2_idx].vertex.x,tree.vertices[q2_idx].vertex.y]); 
 }
 
 //////////////////////////////////////////////////
@@ -798,6 +833,158 @@ function minheap_extract(heap) {
     //   newConfig
     //   findNearestNeighbor
     //   dfsPath
+
+function extendRRT(tree,q_target) {
+    var q_near_index = findNearestNeighbor(tree,q_target);
+    var q_near = tree.vertices[q_near_index].vertex;
+    rrt_q_new = newConfig(q_target,q_near); //global?
+
+    if (!testCollision([rrt_q_new.x,rrt_q_new.y])) { 
+     // Add new_point to tree
+        insertTreeVertex(tree,rrt_q_new); // maybe just push x,y?
+        
+        // Add edge between the points associated with these two indices
+        insertTreeEdge(tree, q_near_index, tree.newest);
+
+        //Check if new_point = target_point
+        q_new_indices = [rrt_q_new.i,rrt_q_new.j];
+        q_target_indices = [q_target.i,q_target.j];
+        if(isEqualArray(q_new_indices,q_target_indices)) {
+            return "reached";
+        }
+        else {
+            return "advanced";
+        }
+    } else {
+        return "trapped";
+    }
+}
+
+function connectRRT() {
+    var connect_path = [];
+    return connect_path;
+}
+
+function randomConfig() {
+    var xIndMax = G[0].length;
+    var yIndMax = G.length;
+    var x_rand = getRndInt(0,xIndMax);
+    var y_rand = getRndInt(0,yIndMax);
+    var q_rand = G[x_rand][y_rand]; // make global?
+    return q_rand;
+}
+
+function sgn(n) { // signum function
+    if (n > 0) {
+        return 1;
+    } else if (n < 0) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+function newConfig(q_rand,q_near) {
+    var G_iind = q_near.i;
+    var G_jind = q_near.j;
+
+    var dir_vec_tmp = [sgn(q_rand.i - q_near.i), sgn(q_rand.j - q_near.j)]
+
+    //Flip across x-axis due to matrix indexing
+    var dir_vec = [dir_vec_tmp[0],dir_vec_tmp[1]]
+
+    var n_squares = Math.floor(eps / 0.1);
+
+    //Add dir_vec elements to i_index, j_index
+    G_iind = G_iind + n_squares * dir_vec[0];
+    G_jind = G_jind + n_squares * dir_vec[1];
+    var q_new = G[G_iind][G_jind];
+    return q_new;
+}
+
+function findDist(a1,a2) { // assumes same length a1 and a2
+    var adiff = [];
+    var asum = 0;
+    for (var iind = 0; iind < a1.length; iind++) {
+        adiff.push((a1[iind] - a2[iind]) * (a1[iind] - a2[iind]));
+        asum += adiff[iind];
+    }
+    var adist = Math.sqrt(asum);
+    return adist;
+}
+
+function isEqualArray(a1,a2) {
+    for (var aind = 0; aind < a2.length; aind++) {
+        if (Math.abs(a1[aind] - a2[aind]) > eps/2) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function arrayCopy(a1) {
+    var acopy = [];
+    for (var iind = 0; iind < a1.length; iind++) {
+        acopy.push(a1[iind]);
+    }
+    return acopy
+}
+
+function findNearestNeighbor(tree,q_node) {
+    var q_near_index = 0;
+    var q_first = tree.vertices[q_near_index].vertex;
+    var q_first_array = [q_first.x,q_first.y];
+    var q_node_array = [q_node.x,q_node.y];
+    var prior_q_dist = findDist(q_first_array,q_node_array);
+    for (var iind = 0; iind < tree.vertices.length; iind++) {
+        var q_s = tree.vertices[iind].vertex;
+        var q_s_array = [q_s.x,q_s.y];
+        var q_dist = findDist(q_s_array,q_node_array);
+        if (q_dist < eps/2) { 
+            var q_near = q_s;
+            var q_near_index = iind;
+            return q_near_index;
+        } else if (q_dist <= prior_q_dist) {
+            var q_near_index = iind;
+            var prior_q_dist = q_dist;
+        }
+    }
+    var q_near = tree.vertices[q_near_index].vertex;
+    return q_near_index;
+}
+
+function dfsPath(tree,curr_node,reverse,path) { //backtrack thru parents
+    path.push(curr_node);
+    curr_node.vertex.visited = true;
+    if (isEqualArray(curr_node,destination_node)) {
+        return true;
+    }
+    for(var i = 0; i< curr_node.edges.length; ++i) {
+        var curr_edge = curr_node.edges[i];
+        if(!curr_edge.vertex.visited) {
+            // for RRT Connect with T_a and T_b
+            if(!reverse) {
+                curr_node.vertex.parent = curr_edge.vertex;
+            }
+            else {
+                curr_edge.vertex.parent = curr_node.vertex;
+            }
+
+            // DFS on the edge
+            var ret = dfsPath(tree, curr_edge,reverse,path);
+            if(ret === true) {
+                return true;
+            }
+        }
+    }
+
+    path.pop();
+
+}
+
+function getRndInt(min, max) {
+  return Math.floor(Math.random() * (max - min) ) + min;
+}
 
 </script>
 

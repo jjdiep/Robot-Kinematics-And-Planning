@@ -51,7 +51,7 @@ kineval.buildFKTransforms = function buildFKTransforms () {
     kineval.traverseFKLink(robot.base,FKBase_mtx);
 }
 
-kineval.traverseFKBase = function traverseFKBase (mat) { 
+kineval.traverseFKBase = function traverseFKBase (matrix) { 
     init_z = matrix_transpose([0,0,1,1]);
     init_x = matrix_transpose([1,0,0,1]);
     var t_rpy = robot.origin.rpy;
@@ -73,12 +73,12 @@ kineval.traverseFKBase = function traverseFKBase (mat) {
 
     robot_heading = matrix_multiply(base_transform,init_z);
     robot_lateral = matrix_multiply(base_transform,init_x);
-    FKBaseTransform = matrix_multiply(mat, base_transform);
+    FKBaseTransform = matrix_multiply(matrix, base_transform);
     robot.origin.xform = matrix_copy(base_transform);
     return FKBaseTransform;
 }
 
-kineval.traverseFKLink = function traverseFKLink (link,mat) {
+kineval.traverseFKLink = function traverseFKLink (link,matrix) {
     var link_object = robot.links[link];
     var link_children = link_object.children;
 
@@ -94,14 +94,14 @@ kineval.traverseFKLink = function traverseFKLink (link,mat) {
         link_object.xform = matrix_copy(parent_xform);
     }
 
-    var FKMtx = matrix_copy(mat) 
+    var FKMtx = matrix_copy(matrix) 
     for(var i = 0; i < link_children.length; i++) {
         var FK_undone = kineval.traverseFKJoint(link_children[i],FKMtx);
-        FKMtx = matrix_copy(FK_undone);
+        // FKMtx = matrix_copy(FK_undone); // this messed things up, FKMtx != FK_undone.
     } 
 }
 
-kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
+kineval.traverseFKJoint = function traverseFKJoint (joint,matrix) {
     var joint_object = robot.joints[joint];
     var joint_xyz = joint_object.origin.xyz;
     var joint_rpy = joint_object.origin.rpy;
@@ -109,7 +109,7 @@ kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
     var joint_angle = joint_object.angle;
 
     var trans_mtx = kineval.get_transformation_matrix (joint_xyz, joint_rpy);
-    var joint_mtx_def = matrix_multiply(mat, trans_mtx);
+    var joint_mtx_def = matrix_multiply(matrix, trans_mtx);
     // checkJointLimits(joint_type,joint_limit_upper,joint_limit_lower,joint_axis,joint_angle);
     // if joint_type is prismatic then create translation matrix, else controlFKJointAngle
     var control_joint_mtx = kineval.checkJointLimits(joint_object, joint_axis, joint_angle)
@@ -119,7 +119,7 @@ kineval.traverseFKJoint = function traverseFKJoint (joint,mat) {
     var joint_mtx = matrix_multiply(joint_mtx_def,control_joint_mtx);
     joint_object.xform = matrix_copy(joint_mtx);
     kineval.traverseFKLink(joint_object.child, joint_mtx);
-    inv_trans_mtx = matrix_invert_affine(trans_mtx);
+    var inv_trans_mtx = matrix_invert_affine(trans_mtx);
     var prior_joint_mtx = matrix_multiply(joint_mtx, inv_trans_mtx); 
 
     return prior_joint_mtx;

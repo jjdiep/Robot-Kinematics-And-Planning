@@ -26,7 +26,7 @@ function matrix_multiply(m1, m2) {
     var i,j,k;
     var m1_col_len;
     var f_m1_row, f_m2_row;
-
+    var mat = [];
     if (m1[0].length == null) {
         f_m1_row = true; 
         m1_col_len = m1.length;
@@ -88,6 +88,8 @@ function matrix_zeroes(m, n) {
 }
     //   matrix_transpose
 function matrix_transpose(m1) {
+    var m1_col_len, m1_row_len;
+    var mat = [];
 
     if (m1[0].length == null) {
         var f_m1_row = true; 
@@ -121,11 +123,10 @@ function matrix_transpose(m1) {
     //   matrix_pseudoinverse
 function matrix_pseudoinverse(m1) {
     
-    var m1_T;
-    var mat;
+    var mat = [];
     var f_m1_row, f_m2_row;
-
-    m1_T = matrix_transpose(m1);
+    var m1_col_len, m1_row_len;
+    var m1_T = matrix_transpose(m1);
 
     if (m1[0].length == null) {
         f_m1_row = true; 
