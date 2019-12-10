@@ -163,8 +163,16 @@ function matrix_invert_affine(m1) {
     //   vector_normalize
 function vector_normalize(v1) {
     var vd, vn;
-    vd = v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2];
-    vn = [v1[0]/Math.sqrt(vd),v1[1]/Math.sqrt(vd),v1[2]/Math.sqrt(vd)];
+    var vadd = 0;
+    var vn = []
+    for (var iind = 0; iind < v1.length; iind++) {
+        vd = v1[iind]*v1[iind];
+        vadd = vd + vadd;
+    }
+    var vmag = Math.sqrt(vadd);
+    for (var jind = 0; jind < v1.length; jind++) {
+        vn.push(v1[jind]/vmag);
+    }
     return vn;
 }
 

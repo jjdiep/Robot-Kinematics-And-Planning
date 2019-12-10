@@ -80,16 +80,16 @@ function initSearch() {
     // search_alg = "breadth-first";  
     // search_alg = "greedy-best-first";  
     // search_alg = "A-star";  
-    search_alg = "RRT";  
-    // search_alg = "RRT-connect";  
+    // search_alg = "RRT";  
+    search_alg = "RRT-connect";  
     // search_alg = "RRT-star";  
 
     // specify default the world for the planner 
     //  (stored as "range" global variable with name "planning_scene")
     // planning_scene = "empty";
     // planning_scene = "misc";
-    // planning_scene = "narrow1";
-    planning_scene = "narrow2";
+    planning_scene = "narrow1";
+    // planning_scene = "narrow2";
     // planning_scene = "three_sections";
 
     // specify default eps (epsilon) spatial resolution variable
@@ -125,7 +125,7 @@ function initSearch() {
 
     // specify start and goal configurations
     q_start_config = [0,0];
-    q_goal_config = [4,4]; // changed for testing JD
+    q_goal_config = [0,1]; // changed for testing JD
     q_init = q_start_config;
     q_goal = q_goal_config;
 
@@ -146,9 +146,15 @@ function initSearch() {
     initSearchGraph();
 
     // initialize search tree from start configurations (RRT-based algorithms), changed for my implementation JD
-    T_a = initRRT(start_node);
+    // T_a = initRRT(start_node);// changed to position
+    T_a = initRRT([start_node.x,start_node.y]);// changed to position
     // also initialize search tree from goal configuration (RRT-Connect)
-    T_b = initRRT(end_node);
+    // T_b = initRRT(end_node);
+    T_b = initRRT([end_node.x,end_node.y]);
+
+    // Store pointers to original trees for dfs later
+    T_a_original = T_a;
+    T_b_original = T_b;
 
     // flag to continue or stop search iterations
     search_iterate = true;
@@ -455,26 +461,29 @@ function iterateRRT() {
     //   drawHighlightedPath - renders a highlighted path in a tree
     
     // start_Tree = T_a
+    rrt_alg = 0;
     var q_random = randomConfig();
     var ext_flag = extendRRT(T_a,q_random);
-    while (ext_flag === "advanced") {
-        ext_flag = extendRRT(T_a,q_random);
-    } 
-    var q_new_array = [rrt_q_new.x,rrt_q_new.y];
+    // while (ext_flag === "advanced") {
+    //     ext_flag = extendRRT(T_a,q_random);
+    // } 
+    var q_new_array = [rrt_q_new[0],rrt_q_new[1]];
     var q_goal_array = [end_node.x,end_node.y];
+    var dist_goal = calc_L2_norm(q_new_array,q_goal_array);
     if (ext_flag === "trapped") {
         return "failed";
-    } else if (isEqualArray(q_new_array,q_goal_array)) {
+    } else if (dist_goal < eps) {
         search_iterate = false;
         var found = false;
-        destination_node = T_a.vertices[0].vertex;
+        destination_node = T_a_original.vertices[0].vertex;
         var path = [];
-        found = dfsPath(T_a,T_a.vertices[T_a.newest],false,path);
+        found = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],false,path);
         var final_path = path.reverse();
         drawHighlightedPath(final_path);
         return "succeeded";
     }
-
+    search_iterate = true;
+    return "iterating";
 }
 
 function iterateRRTConnect() {
@@ -498,9 +507,63 @@ function iterateRRTConnect() {
 
     // start_Tree = T_a
     // end_Tree = T_b
+    rrt_alg = 1;
+    var q_random = randomConfig();
+    var ext_flag = extendRRT(T_a,q_random);
+    if (ext_flag != "trapped") {
+        ext_flag = connectRRT(T_b,rrt_q_new);
+    } 
+    if (ext_flag === "reached") {
+        search_iterate = false;
+        var found = false;
+        destination_node = T_a_original.vertices[0].vertex;
+        var path1 = [];
+        dfsPath1 = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],false,path1);
+
+        var path2 = [];
+        destination_node = T_b_original.vertices[0].vertex;
+        dfsPath2 = dfsPath(T_b_original,T_b_original.vertices[T_b_original.newest],true,path2);
+        var final_path = (dfsPath1.reverse()).concat(dfsPath2);
+
+        drawHighlightedPath(final_path);
+        return "succeeded";
+    }
+
+    var alt_tree = T_a;
+    T_a = T_b;
+    T_b = alt_tree;
+
+    search_iterate = true;
+    return "iterating";
 }
 
 function iterateRRTStar() {
+    rrt_alg = 2;
+    var q_goal_array = [end_node.x,end_node.y];
+    var q_random = randomConfig();
+    var goal_sample_prob = rand_num(0,1);
+    if (goal_sample_prob > .9) {
+        q_random = q_goal_array;
+    }
+    var ext_flag = extendRRT(T_a,q_random);
+    // while (ext_flag === "advanced") {
+    //     ext_flag = extendRRT(T_a,q_random);
+    // } 
+    var q_new_array = [rrt_q_new[0],rrt_q_new[1]];
+    var dist_goal = calc_L2_norm(q_new_array,q_goal_array);
+    if (ext_flag === "trapped") {
+    } else if (dist_goal < eps) {
+        search_iterate = false;
+        var found = false;
+        destination_node = T_a_original.vertices[0].vertex;
+        var path = [];
+        found = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],destination_node,false,path);
+        var final_path = path.reverse();
+        drawHighlightedPath(final_path);
+        return "succeeded";
+    }
+    search_iterate = true;
+    return "iterating";
 
 }
 
@@ -550,7 +613,7 @@ function drawHighlightedPath(path) {
         ctx.moveTo(xformWorldViewX(path[i-1].vertex[0]),xformWorldViewY(path[i-1].vertex[1]));
         ctx.lineTo(xformWorldViewX(path[i].vertex[0]),xformWorldViewY(path[i].vertex[1]));
     }
-    ctx.stroke();
+    ctx.stroke()
 }
 
 function drawHighlightedPathGraph(current_node) {
@@ -701,26 +764,29 @@ function initRRT(q) {
     tree.vertices[0] = {};
     tree.vertices[0].vertex = q;
     tree.vertices[0].edges = [];
-
+    tree.vertices[0].distance = 0;
+    // tree.vertices[0].indices = []; // added by JD
     // maintain index of newest vertex added to tree
     tree.newest = 0;
 
     return tree;
 }
 
-function insertTreeVertex(tree,q) {
+function insertTreeVertex(tree,q,dist) {
 
     // create new vertex object for tree with given configuration and no edges
     new_vertex = {};
     new_vertex.edges = [];
     new_vertex.vertex = q;
+    new_vertex.distance = dist;
+    // new_vertex.indices = [];
     tree.vertices.push(new_vertex);
 
     // maintain index of newest vertex added to tree
     tree.newest = tree.vertices.length - 1;
 
     // draw location on canvas
-    draw_2D_configuration([q.x,q.y]);
+    draw_2D_configuration(q);
 }
 
 function draw_2D_configuration(q) {
@@ -745,14 +811,31 @@ function insertTreeEdge(tree,q1_idx,q2_idx) {
 
     // add edge to first vertex as pointer to second vertex
     tree.vertices[q1_idx].edges.push(tree.vertices[q2_idx]);
+    // tree.vertices[q1_idx].indices.push(q2_idx); // added
 
     // add edge to second vertex as pointer to first vertex
     tree.vertices[q2_idx].edges.push(tree.vertices[q1_idx]);
+    // tree.vertices[q2_idx].indices.push(q1_idx); // added
 
     // draw edge on canvas
-    draw_2D_edge_configurations([tree.vertices[q1_idx].vertex.x,tree.vertices[q1_idx].vertex.y],
-                                [tree.vertices[q2_idx].vertex.x,tree.vertices[q2_idx].vertex.y]); 
+    draw_2D_edge_configurations([tree.vertices[q1_idx].vertex[0],tree.vertices[q1_idx].vertex[1]],
+                                [tree.vertices[q2_idx].vertex[0],tree.vertices[q2_idx].vertex[1]]); 
 }
+
+// function unshiftTreeEdge(tree,q1_idx,q2_idx) {
+
+//     // add edge to first vertex as pointer to second vertex
+//     tree.vertices[q1_idx].edges.unshift(tree.vertices[q2_idx]);
+//     // tree.vertices[q1_idx].edges.pop(tree.vertices[q2_idx]);
+
+//     // add edge to second vertex as pointer to first vertex
+//     tree.vertices[q2_idx].edges.unshift(tree.vertices[q1_idx]);
+//     // tree.vertices[q2_idx].edges.pop(tree.vertices[q1_idx]);
+
+//     // draw edge on canvas
+//     draw_2D_edge_configurations([tree.vertices[q2_idx].vertex[0],tree.vertices[q2_idx].vertex[1]],
+//                                 [tree.vertices[q1_idx].vertex[0],tree.vertices[q1_idx].vertex[1]]); 
+// }
 
 //////////////////////////////////////////////////
 /////     MIN HEAP IMPLEMENTATION FUNCTIONS
@@ -839,17 +922,28 @@ function extendRRT(tree,q_target) {
     var q_near = tree.vertices[q_near_index].vertex;
     rrt_q_new = newConfig(q_target,q_near); //global?
 
-    if (!testCollision([rrt_q_new.x,rrt_q_new.y])) { 
-     // Add new_point to tree
-        insertTreeVertex(tree,rrt_q_new); // maybe just push x,y?
+    if (!testCollision(rrt_q_new)) { 
+    // Add new_point to tree
+        if (rrt_alg != 2) { // RRT, RRT-Connect
+            var node_dist = calc_L2_norm(rrt_q_new, q_near);
+        } else { // RRT-Star
+            var z_neighbor_list = Reach(tree);
+            var z_min_cost_index = Near(tree,z_neighbor_list);
+            var z_near = tree.vertices[z_min_cost_index].vertex;
+            var node_dist = calc_L2_norm(rrt_q_new, z_near)+tree.vertices[z_min_cost_index].distance;
+        }
         
+        insertTreeVertex(tree,rrt_q_new,node_dist); // interpolate?
         // Add edge between the points associated with these two indices
-        insertTreeEdge(tree, q_near_index, tree.newest);
-
-        //Check if new_point = target_point
-        q_new_indices = [rrt_q_new.i,rrt_q_new.j];
-        q_target_indices = [q_target.i,q_target.j];
-        if(isEqualArray(q_new_indices,q_target_indices)) {
+        if (rrt_alg != 2) {
+            insertTreeEdge(tree,q_near_index,tree.newest); //interpolate?
+        } else {
+            insertTreeEdge(tree,z_min_cost_index,tree.newest); //interpolate?
+            Rewire(tree,z_neighbor_list); //interpolate
+        }
+        //Check if new_point = target_point?
+        var dist_target = calc_L2_norm(rrt_q_new,q_target);
+        if(dist_target < eps) {
             return "reached";
         }
         else {
@@ -859,18 +953,107 @@ function extendRRT(tree,q_target) {
         return "trapped";
     }
 }
+function Near(tree,z_neighbor_list) {
+    var prior_z_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[0]].vertex);
+    var prior_z_cost = tree.vertices[z_neighbor_list[0]].distance;
+    var prior_z_total_cost = prior_z_dist + prior_z_cost;
+    var z_min_cost_index = z_neighbor_list[0];
+    for (var iind = 0; iind < z_neighbor_list.length; iind++) {
+        var z_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+        var z_cost = tree.vertices[z_neighbor_list[iind]].distance;
+        var z_total_cost = z_dist + z_cost;
+        var pathCollision = interpolate_q_check(tree.vertices[z_neighbor_list[iind]].vertex,rrt_q_new,);
+        if (z_total_cost < prior_z_total_cost && !pathCollision) {
+            var z_min_cost_index = z_neighbor_list[iind];
+            // var z_near_index = iind;
+            prior_z_total_cost = z_total_cost;
+        }
+    }
 
-function connectRRT() {
-    var connect_path = [];
-    return connect_path;
+    return z_min_cost_index;
+}
+
+function Reach(tree) {
+    var neighbor_range = 2 * eps;
+    var z_neighbor_list = [];
+    for (var iind = 0; iind < tree.vertices.length; iind++) {
+        var q_s = tree.vertices[iind].vertex;
+        var q_dist = calc_L2_norm(rrt_q_new,q_s);
+        if (q_dist > 0 && q_dist < neighbor_range) { 
+            z_neighbor_list.push(iind);
+        }
+    }
+    return z_neighbor_list;
+}
+
+function Rewire(tree,z_neighbor_list) {
+    for (var iind = 0; iind < z_neighbor_list.length; iind++) {
+        var prior_z_path_cost = tree.vertices[z_neighbor_list[iind]].distance;
+        var z_new_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+
+        var z_new_cost = tree.vertices[tree.newest].distance;
+        var z_new_path_cost = z_new_dist + z_new_cost;
+        var pathCollision = interpolate_q_check(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+        if (z_new_path_cost < prior_z_path_cost && !pathCollision) {
+            insertTreeEdge(tree, tree.newest, z_neighbor_list[iind]);
+            var new_edge = tree.vertices[z_neighbor_list[iind]].edges.pop();
+ 
+            tree.vertices[z_neighbor_list[iind]].edges.unshift(new_edge);
+            tree.vertices[z_neighbor_list[iind]].distance = z_new_path_cost;
+            var rewired_z_path = [];
+            var destination_node = tree.vertices[0].vertex;
+            rewired_cost(tree,tree.vertices[z_neighbor_list[iind]],destination_node,rewired_z_path); 
+        }
+    }
+}
+
+// function rewired_cost(tree,curr_node,destination_node,path) {
+//     dfsPath(tree, curr_node,destination_node,false,path);
+//     // var prev_node = tree.vertices[path[0].indices[0]];
+//     // var prev_node = path[1];  
+//     // for (iind = 0; iind < path.length-2; iind++) {
+//     //     // var path_node = tree.vertices[path[iind+1].indices[0]];
+//     //     var path_node = path[iind+2];
+//     //     var path_dist = calc_L2_norm(prev_node.vertex,path_node.vertex);
+//     //     // tree.vertices[path[iind+1].indices[0]].distance = prev_node.distance-path_dist;
+//     //     path_node.distance = prev_node.distance-path_dist;
+//     //     prev_node = path[iind+2];
+//     // }
+
+//     for (iind = 0; iind < path.length-1; iind++) {
+//         // var path_node = tree.vertices[path[iind+1].indices[0]];
+//         //var path_node = path[iind+1];
+//         var path_dist = calc_L2_norm(path[iind].vertex,path[iind+1].vertex);
+//         // tree.vertices[path[iind+1].indices[0]].distance = path[iind].distance-path_dist;
+//         path[iind+1].distance = path[iind].distance-path_dist;
+//     }
+
+function rewired_cost(tree,curr_node,destination_node,path) {
+    dfsPath(tree, curr_node,destination_node,false,path);
+    path[path.length-1].distance=0;// not sure if this line is necessary or not, just in case;
+    for (i = path.length-1; i >=1; i--) {
+       path[i-1].distance = path[i].distance+calc_L2_norm(path[i].vertex, path[i-1].vertex);
+    }
+}
+
+function connectRRT(tree,connect_node) {
+    var extend_ret = extendRRT(tree,connect_node);
+    while (extend_ret === "advanced") {
+        extend_ret = extendRRT(tree,connect_node)
+    }
+    return extend_ret;
 }
 
 function randomConfig() {
-    var xIndMax = G[0].length;
-    var yIndMax = G.length;
-    var x_rand = getRndInt(0,xIndMax);
-    var y_rand = getRndInt(0,yIndMax);
-    var q_rand = G[x_rand][y_rand]; // make global?
+    var xlen = G.length;
+    var ylen = G[0].length; 
+    var yIndMax = G[0][xlen-1].y;
+    var yIndMin = G[0][0].y;
+    var xIndMax = G[ylen-1][0].x;
+    var xIndMin = G[0][0].x;
+    var x_rand = rand_num(xIndMin,xIndMax);
+    var y_rand = rand_num(yIndMin,yIndMax);
+    var q_rand = [x_rand,y_rand]; // make global?
     return q_rand;
 }
 
@@ -885,24 +1068,39 @@ function sgn(n) { // signum function
 }
 
 function newConfig(q_rand,q_near) {
-    var G_iind = q_near.i;
-    var G_jind = q_near.j;
-
-    var dir_vec_tmp = [sgn(q_rand.i - q_near.i), sgn(q_rand.j - q_near.j)]
-
+    var dir_vec = [q_rand[0] - q_near[0], q_rand[1] - q_near[1]]; // normalize!
+    var dir_mag = calc_L2_norm(q_rand,q_near);
+    var unit_dir_vec = [dir_vec[0]/dir_mag,dir_vec[1]/dir_mag]; 
     //Flip across x-axis due to matrix indexing
-    var dir_vec = [dir_vec_tmp[0],dir_vec_tmp[1]]
+    // var dir_vec = [dir_vec_tmp[0],dir_vec_tmp[1]]
 
-    var n_squares = Math.floor(eps / 0.1);
+    // var n_squares = Math.floor(eps / 0.1); // change to eps?
+    var n_squares = eps; // change to eps?
 
     //Add dir_vec elements to i_index, j_index
-    G_iind = G_iind + n_squares * dir_vec[0];
-    G_jind = G_jind + n_squares * dir_vec[1];
-    var q_new = G[G_iind][G_jind];
+    x_new = q_near[0] + n_squares * unit_dir_vec[0];
+    y_new = q_near[1] + n_squares * unit_dir_vec[1];
+    var q_new = [x_new,y_new];
     return q_new;
 }
 
-function findDist(a1,a2) { // assumes same length a1 and a2
+function interpolate_q_check(q_near,rrt_q_new) {
+    var num_interp = 10;
+    for (var iind = 0; iind < num_interp; iind++) {
+        var interp_q = [];
+        for (var jind = 0; jind < q_near.length; jind++) {
+            var interp_state = (rrt_q_new[jind]-q_near[jind])/num_interp*(iind+1)+q_near[jind];
+            interp_q.push(interp_state);
+        }
+        var is_collision = testCollision(interp_q);
+        if (is_collision) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function calc_L2_norm(a1,a2) { // assumes same length a1 and a2
     var adiff = [];
     var asum = 0;
     for (var iind = 0; iind < a1.length; iind++) {
@@ -933,14 +1131,14 @@ function arrayCopy(a1) {
 function findNearestNeighbor(tree,q_node) {
     var q_near_index = 0;
     var q_first = tree.vertices[q_near_index].vertex;
-    var q_first_array = [q_first.x,q_first.y];
-    var q_node_array = [q_node.x,q_node.y];
-    var prior_q_dist = findDist(q_first_array,q_node_array);
+    var q_first_array = [q_first[0],q_first[1]];
+    var q_node_array = [q_node[0],q_node[1]];
+    var prior_q_dist = calc_L2_norm(q_first_array,q_node_array);
     for (var iind = 0; iind < tree.vertices.length; iind++) {
         var q_s = tree.vertices[iind].vertex;
-        var q_s_array = [q_s.x,q_s.y];
-        var q_dist = findDist(q_s_array,q_node_array);
-        if (q_dist < eps/2) { 
+        var q_s_array = [q_s[0],q_s[1]];
+        var q_dist = calc_L2_norm(q_s_array,q_node_array);
+        if (q_dist < eps) { 
             var q_near = q_s;
             var q_near_index = iind;
             return q_near_index;
@@ -953,37 +1151,35 @@ function findNearestNeighbor(tree,q_node) {
     return q_near_index;
 }
 
-function dfsPath(tree,curr_node,reverse,path) { //backtrack thru parents
-    path.push(curr_node);
-    curr_node.vertex.visited = true;
-    if (isEqualArray(curr_node,destination_node)) {
-        return true;
-    }
-    for(var i = 0; i< curr_node.edges.length; ++i) {
-        var curr_edge = curr_node.edges[i];
-        if(!curr_edge.vertex.visited) {
-            // for RRT Connect with T_a and T_b
-            if(!reverse) {
-                curr_node.vertex.parent = curr_edge.vertex;
-            }
-            else {
-                curr_edge.vertex.parent = curr_node.vertex;
-            }
+function dfsPath(tree, curr_node,destination_node,reverse,in_path) {    
+    in_path.push(curr_node);
 
-            // DFS on the edge
-            var ret = dfsPath(tree, curr_edge,reverse,path);
-            if(ret === true) {
-                return true;
-            }
+    curr_node.vertex.visited = true;
+    var destination_dist = calc_L2_norm(curr_node.vertex,destination_node);
+    iter = 0;
+    while(destination_dist > eps) {
+        var current_edge_pt = curr_node.edges[0];
+        in_path.push(current_edge_pt);
+        curr_node = current_edge_pt;
+        destination_dist = calc_L2_norm(curr_node.vertex,destination_node);
+        iter++;
+        console.log(iter);
+        if (iter > 1000) {
+            console.log("DFS error!");
         }
     }
-
-    path.pop();
+    return in_path;
 
 }
 
-function getRndInt(min, max) {
-  return Math.floor(Math.random() * (max - min) ) + min;
+
+// function getRndInt(min, max) {
+//   return Math.floor(Math.random() * (max - min) ) + min;
+// }
+
+function rand_num(lower,upper) {
+    var num = Math.random() * (upper - lower) + lower;
+    return num;
 }
 
 </script>

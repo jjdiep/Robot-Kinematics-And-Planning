@@ -118,11 +118,21 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     var i; 
     q_goal_config = new Array(q_start_config.length);
     for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
-
+    // if (robot.name == "sawyer") {
+    //     q_goal_config[1] = .91488; // sawyer
+    // }
     // flag to continue rrt iterations
     rrt_iterate = true;
     rrt_iter_count = 0;
 
+    T_a = tree_init(q_start_config);
+    T_b = tree_init(q_goal_config);
+
+    // Store pointers to original trees for dfs later
+    T_a_original = T_a;
+    T_b_original = T_b;
+    iterate = 0;
+    iterate_rrt = 1;
     // make sure the rrt iterations are not running faster than animation update
     cur_time = Date.now();
 }
@@ -132,8 +142,9 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
 function robot_rrt_planner_iterate() {
 
     var i;
-    rrt_alg = 1;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED)
-
+    rrt_alg = 2;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED)
+    rrt_eps = 1.75;
+    rrt_result = "searching";
     if (rrt_iterate && (Date.now()-cur_time > 10)) {
         cur_time = Date.now();
 
@@ -150,8 +161,90 @@ function robot_rrt_planner_iterate() {
     //   tree_init - creates a tree of configurations
     //   tree_add_vertex - adds and displays new configuration vertex for a tree
     //   tree_add_edge - adds and displays new tree edge between configurations
+        if (rrt_alg == 0) {
+            rrt_result = iterate_rrt_basic();
+        } else if (rrt_alg == 1) {
+            rrt_result = iterate_rrt_connect();
+        } else if (rrt_alg == 2) {
+            rrt_result = iterate_rrt_star();
+        }
+    }
+    return rrt_result;
+}
+
+function iterate_rrt_basic() {
+    // not needed, but implemented in 2D
+    iterate++
+    if (iterate >= 10000) {
+        iterate_rrt++
+        console.log(iterate_rrt);
+    }
+    var q_random = random_config();
+    // Goal bias to aid in completion within some reasonable iterations. Yes it's not part of the original implementation.
+    var goal_sample_prob = rand_num(0,1);
+    if (goal_sample_prob > ((1e6-iterate_rrt)/iterate_rrt)) {
+        q_random = q_goal_config;
+    }
+    var ext_flag = extendRRT(T_a,q_random);
+    // while (ext_flag === "advanced") {
+    //     ext_flag = extendRRT(T_a,q_random);
+    // } 
+    var dist_goal = calc_L2_norm(rrt_q_new,q_goal_config);
+    if (dist_goal < 3) {
+        console.log("So Close!")
+    }
+    if (ext_flag === "trapped") {
+    } else if (dist_goal < rrt_eps) {
+        rrt_iterate = false;
+        find_path();
+        return "reached";
+    }
+    rrt_iterate = true;
+    return "iterating";
+}
+
+function iterate_rrt_connect() {
+    var q_random = random_config();
+
+    var ext_flag = extendRRT(T_a,q_random);
+    if (ext_flag != "trapped") {
+        ext_flag = connectRRT(T_b,rrt_q_new);
+    } 
+    if (ext_flag === "reached") {
+        rrt_iterate = false;
+        find_path();
+
+        return "reached";
     }
 
+    var alt_tree = T_a;
+    T_a = T_b;
+    T_b = alt_tree;
+
+    rrt_iterate = true;
+    return "iterating";
+}
+
+function iterate_rrt_star() {
+    var q_random = random_config();
+    var goal_sample_prob = rand_num(0,1);
+    console.log(goal_sample_prob);
+    if (goal_sample_prob > .95) {
+        q_random = q_goal_config;
+    }
+    var ext_flag = extendRRT(T_a,q_random);
+    // while (ext_flag === "advanced") {
+    //     ext_flag = extendRRT(T_a,q_random);
+    // } 
+    var dist_goal = calc_L2_norm(rrt_q_new,q_goal_config);
+    if (ext_flag === "trapped") {
+    } else if (dist_goal < rrt_eps) {
+        rrt_iterate = false;
+        find_path();
+        return "reached";
+    }
+    rrt_iterate = true;
+    return "iterating";
 }
 
 //////////////////////////////////////////////////
@@ -168,6 +261,7 @@ function tree_init(q) {
     tree.vertices[0] = {};
     tree.vertices[0].vertex = q;
     tree.vertices[0].edges = [];
+    tree.vertices[0].distance = 0;
 
     // create rendering geometry for base location of vertex configuration
     add_config_origin_indicator_geom(tree.vertices[0]);
@@ -178,14 +272,14 @@ function tree_init(q) {
     return tree;
 }
 
-function tree_add_vertex(tree,q) {
+function tree_add_vertex(tree,q,dist) {
 
 
     // create new vertex object for tree with given configuration and no edges
     var new_vertex = {};
     new_vertex.edges = [];
     new_vertex.vertex = q;
-
+    new_vertex.distance = dist;
     // create rendering geometry for base location of vertex configuration
     add_config_origin_indicator_geom(new_vertex);
 
@@ -236,13 +330,302 @@ function tree_add_edge(tree,q1_idx,q2_idx) {
     //   normalize_joint_state
     //   find_path
     //   path_dfs
+//eps < .7
+
+function extendRRT(tree,q_target) {
+    var q_near_index = nearest_neighbor(tree,q_target);
+    var q_near = tree.vertices[q_near_index].vertex;
+    rrt_q_new = new_config(q_target,q_near); //global?
+
+    var is_collision = kineval.poseIsCollision(rrt_q_new);
+    var path_collision = interpolate_q_check(q_near,rrt_q_new);
+    if (!is_collision && !path_collision) {
+        if (rrt_alg != 2) { // for RRT, RRT-Connect
+            var node_dist = calc_L2_norm(rrt_q_new,q_near);
+        } else { // RRT-Star
+            var z_neighbor_list = Reach(tree);
+            var z_min_cost_index = Near(tree,z_neighbor_list);
+            var z_near = tree.vertices[z_min_cost_index].vertex;
+            var node_dist = calc_L2_norm(rrt_q_new, z_near) + z_near.distance;
+        }
+     // Add new_point to tree
+        tree_add_vertex(tree,rrt_q_new,node_dist); // maybe just push x,y?
+        
+        if (rrt_alg != 2) {
+            // Add edge between the points associated with these two indices
+            tree_add_edge(tree, q_near_index, tree.newest);
+        } else {
+            tree_add_edge(tree,z_min_cost_index,tree.newest); //interpolate?
+            Rewire(tree,z_neighbor_list); //interpolate
+        }
+
+        //Check if new_point = target_point
+        var dist_target = calc_L2_norm(rrt_q_new,q_target);
+        if(dist_target < rrt_eps) {
+            return "reached";
+        }
+        else {
+            return "advanced";
+        }
+    } else {
+        return "trapped";
+    }
+}
+
+function Near(tree,z_neighbor_list) {
+    var prior_z_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[0]].vertex);
+    var prior_z_cost = tree.vertices[z_neighbor_list[0]].distance;
+    var prior_z_total_cost = prior_z_dist + prior_z_cost;
+    var z_min_cost_index = z_neighbor_list[0];
+    for (var iind = 0; iind < z_neighbor_list.length; iind++) {
+        var z_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+        var z_cost = tree.vertices[z_neighbor_list[iind]].distance;
+        var z_total_cost = z_dist + z_cost;
+        var pathCollision = interpolate_q_check(tree.vertices[z_neighbor_list[iind]].vertex,rrt_q_new,);
+        if (z_total_cost < prior_z_total_cost && !pathCollision) {
+            var z_min_cost_index = z_neighbor_list[iind];
+            prior_z_total_cost = z_total_cost;
+        }
+    }
+
+    return z_min_cost_index;
+}
+
+function Reach(tree) {
+    var neighbor_range = 2 * rrt_eps;
+    var z_neighbor_list = [];
+    for (var iind = 0; iind < tree.vertices.length; iind++) {
+        var q_s = tree.vertices[iind].vertex;
+        var q_dist = calc_L2_norm(rrt_q_new,q_s);
+        if (q_dist > 0 && q_dist < neighbor_range) { 
+            z_neighbor_list.push(iind);
+        }
+    }
+    return z_neighbor_list;
+}
+
+function Rewire(tree,z_neighbor_list) {
+    for (var iind = 0; iind < z_neighbor_list.length; iind++) {
+        var prior_z_path_cost = tree.vertices[z_neighbor_list[iind]].distance;
+        var z_new_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+
+        var z_new_cost = tree.vertices[tree.newest].distance;
+        var z_new_path_cost = z_new_dist + z_new_cost;
+        var pathCollision = interpolate_q_check(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
+        if (z_new_path_cost < prior_z_path_cost && !pathCollision) {
+            tree_add_edge(tree, tree.newest, z_neighbor_list[iind]);
+            var new_edge = tree.vertices[z_neighbor_list[iind]].edges.pop();
+ 
+            tree.vertices[z_neighbor_list[iind]].edges.unshift(new_edge);
+            tree.vertices[z_neighbor_list[iind]].distance = z_new_path_cost;
+            var rewired_z_path = [];
+            var destination_node = tree.vertices[0].vertex;
+            rewired_cost(tree,tree.vertices[z_neighbor_list[iind]],destination_node,rewired_z_path); 
+        }
+    }
+}
+
+function rewired_cost(tree,curr_node,destination_node,path) {
+    path_dfs(tree, curr_node,destination_node,false,path);
+    path[path.length-1].distance=0;// not sure if this line is necessary or not, just in case;
+    for (i = path.length-1; i >=1; i--) {
+       path[i-1].distance = path[i].distance+calc_L2_norm(path[i].vertex, path[i-1].vertex);
+    }
+}
+
+function interpolate_q_check(q_near,rrt_q_new) {
+    var num_interp = 10;
+    for (var iind = 0; iind < num_interp; iind++) {
+        var interp_q = [];
+        for (var jind = 0; jind < q_near.length; jind++) {
+            var interp_state = (rrt_q_new[jind]-q_near[jind])/num_interp*(iind+1)+q_near[jind];
+            interp_q.push(interp_state);
+        }
+        var is_collision = kineval.poseIsCollision(interp_q);
+        if (is_collision) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function connectRRT(tree,connect_node) {
+    var counter = 0;
+    var extend_ret = extendRRT(tree,connect_node);
+    counter++;
+    while (extend_ret === "advanced") {
+        extend_ret = extendRRT(tree,connect_node);
+        counter++
+    }
+    return extend_ret;
+}
+
+function random_config() {
+    var q_rand = new Array(q_start_config.length);
+
+    // Get a random point from the graph
+    for(var i = 0; i < 3; ++i) {
+        q_rand[i] = rand_num(robot_boundary[0][i], robot_boundary[1][i]);
+    }
+    //Set y coordinate to 0
+    q_rand[1] = 0; 
+
+    // Generate orientation of robot base (3,4,5) and the rest of the joints
+    for(var i = 3; i < q_rand.length; ++i) {
+        q_rand[i] = rand_num(0, 2 * Math.PI);
+    } // need to consider joint type and limits!
+
+    return q_rand;
+}
+
+function new_config(q_rand,q_near) {
+    var dir_vec = vector_subtract(q_rand,q_near); // normalize!
+    var dir_mag = calc_L2_norm(q_rand,q_near); // not sure
+    var q_new = [];
+    var unit_dir_vec = []
+    // var n_squares = Math.floor(eps / 0.1); // change to eps?
+    // var unit_dir_vec = vector_normalize(dir_vec); 
+    //Add dir_vec elements to i_index, j_index
+    for (var iind = 0; iind < q_near.length; iind++) {
+        unit_dir_vec.push(dir_vec[iind]/dir_mag);
+        var q_added = q_near[iind] + rrt_eps * unit_dir_vec[iind];
+        q_new.push(q_added);
+    }
+    var norm_q_new = normalize_joint_state(q_new)
+    return norm_q_new;
+}
+
+function calc_L2_norm(a1,a2) { // assumes same length a1 and a2
+    var adiff = [];
+    var asum = 0;
+    for (var iind = 0; iind < a1.length; iind++) {
+        adiff.push((a1[iind] - a2[iind]) * (a1[iind] - a2[iind]));
+        asum += adiff[iind];
+    }
+    var adist = Math.sqrt(asum);
+    return adist;
+}
+
+function isEqualArray(a1,a2) { // maybe needed?
+    for (var aind = 0; aind < a2.length; aind++) {
+        if (Math.abs(a1[aind] - a2[aind]) > rrt_eps/2) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function arrayCopy(a1) {
+    var acopy = [];
+    for (var iind = 0; iind < a1.length; iind++) {
+        acopy.push(a1[iind]);
+    }
+    return acopy
+}
+
+function nearest_neighbor(tree,q_node) {
+    var q_near_index = 0;
+    var q_first = tree.vertices[q_near_index].vertex;
+    var prior_q_dist = calc_L2_norm(q_first,q_node);
+    for (var iind = 0; iind < tree.vertices.length; iind++) {
+        var q_s = tree.vertices[iind].vertex;
+        var q_dist = calc_L2_norm(q_s,q_node);
+        if (q_dist < rrt_eps) { 
+            var q_near = q_s;
+            var q_near_index = iind;
+            return q_near_index;
+        } else if (q_dist <= prior_q_dist) {
+            var q_near_index = iind;
+            var prior_q_dist = q_dist;
+        }
+    }
+    var q_near = tree.vertices[q_near_index].vertex;
+    return q_near_index;
+}
+
+function path_dfs(tree, curr_node,in_path) {    
+    in_path.push(curr_node);
+
+    curr_node.vertex.visited = true;
+    var destination_dist = calc_L2_norm(curr_node.vertex,destinationNode);
+    while(destination_dist > rrt_eps*2/3) {
+        var current_edge_pt = curr_node.edges[0];
+        in_path.push(current_edge_pt);
+        curr_node = current_edge_pt;
+        destination_dist = calc_L2_norm(curr_node.vertex,destinationNode);
+    }
+    return in_path;
+
+}
 
 
+// function getRndInt(min, max) {
+//   return Math.floor(Math.random() * (max - min) ) + min;
+// }
+
+function rand_num(lower,upper) {
+    var num = Math.random() * (upper - lower) + lower;
+    return num;
+}
 
 
+// Loops through all angles and puts them in the range 0 to 2pi
+function normalize_joint_state(q) {
+    for(var i = 3; i < q.length; ++i) {
+        var tpi = 2 * Math.PI;
+        q[i] = Math.abs(q[i] % tpi);
+    }
+    // Set y to 0.
+    q[1] = 0;
+    // if (robot.name == "sawyer") {
+    //     q[1] = .91488; // sawyer
+    // }
+    // Add joint limit planning!
+
+    // No rotations allowed about any axis other than pitch
+    q[3] = 0;
+    // q[4] = 0;
+    q[5] = 0;
 
 
+    return q;
+}
 
+function find_path() {
+    if (rrt_alg == 1) {
+        // Do dfs on each tree back to it's root node from new_point,
+        // which is in both trees at the last index (tree.newest)
+        var found = false;
+        
+        var path1 = [];
 
+        destinationNode = T_a_original.vertices[0].vertex;
+        dfsPath1 = path_dfs(T_a_original,T_a_original.vertices[T_a_original.newest],path1);
+        
+        var path2 = [];
 
+        destinationNode = T_b_original.vertices[0].vertex;
+        dfsPath2 = path_dfs(T_b_original,T_b_original.vertices[T_b_original.newest],path2);
 
+        var final_path = (dfsPath1.reverse()).concat(dfsPath2);
+
+        kineval.motion_plan = final_path;
+
+        // Loop through kineval.motion_plan and highlight the path in red
+        for(var i = 0; i < kineval.motion_plan.length; ++i) {
+            kineval.motion_plan[i].geom.material.color = {r:1,g:0,b:0};
+        }
+    } else if (rrt_alg == 2 || rrt_alg == 0) { // RRT-star and RRT
+        var found = false;
+        destinationNode = T_a.vertices[0].vertex;
+        var path = [];
+        found = path_dfs(T_a_original,T_a_original.vertices[T_a_original.newest],path);
+        var final_path = path.reverse();
+        kineval.motion_plan = final_path;
+        // Loop through kineval.motion_plan and highlight the path in red
+        for(var i = 0; i < kineval.motion_plan.length; ++i) {
+            kineval.motion_plan[i].geom.material.color = {r:1,g:0,b:0};
+        }
+    }
+
+}
