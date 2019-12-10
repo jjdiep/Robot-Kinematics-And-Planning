@@ -259,6 +259,14 @@ function vector_subtract(v1,v2) {
     return v_diff;
 }
 
+function vector_magnitude(v1) {
+    var v_mag = 0;
+    for (var i = 0; i < v1.length; i++) {
+        v_mag = v1[i] * v1[i] + v_mag;
+    }
+    return v_mag;
+}
+
 function vector_add(v1,v2) {
     var v_sum = [];
     // Check if vector is same length!

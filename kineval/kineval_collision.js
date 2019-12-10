@@ -33,12 +33,11 @@ kineval.robotIsCollision = function robot_iscollision() {
     ];
 
     q_names = {};  // store mapping between joint names and q DOFs
-
     for (x in robot.joints) {
         q_names[x] = q_robot_config.length;
         q_robot_config = q_robot_config.concat(robot.joints[x].angle);
     }
-
+    // console.log(q_names);
     // test for collision and change base color based on the result
     collision_result = kineval.poseIsCollision(q_robot_config);
 

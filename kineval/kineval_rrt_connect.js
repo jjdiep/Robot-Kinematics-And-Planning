@@ -143,7 +143,6 @@ function robot_rrt_planner_iterate() {
 
     var i;
     rrt_alg = 2;  // 0: basic rrt (OPTIONAL), 1: rrt_connect (REQUIRED)
-    rrt_eps = 1.75;
     rrt_result = "searching";
     if (rrt_iterate && (Date.now()-cur_time > 10)) {
         cur_time = Date.now();
@@ -162,10 +161,13 @@ function robot_rrt_planner_iterate() {
     //   tree_add_vertex - adds and displays new configuration vertex for a tree
     //   tree_add_edge - adds and displays new tree edge between configurations
         if (rrt_alg == 0) {
+            rrt_eps = 1.75;
             rrt_result = iterate_rrt_basic();
         } else if (rrt_alg == 1) {
+            rrt_eps = 1;
             rrt_result = iterate_rrt_connect();
         } else if (rrt_alg == 2) {
+            rrt_eps = 1.75;
             rrt_result = iterate_rrt_star();
         }
     }
@@ -182,7 +184,7 @@ function iterate_rrt_basic() {
     var q_random = random_config();
     // Goal bias to aid in completion within some reasonable iterations. Yes it's not part of the original implementation.
     var goal_sample_prob = rand_num(0,1);
-    if (goal_sample_prob > ((1e6-iterate_rrt)/iterate_rrt)) {
+    if (goal_sample_prob > ((1e3-iterate_rrt)/iterate_rrt)) {
         q_random = q_goal_config;
     }
     var ext_flag = extendRRT(T_a,q_random);
@@ -226,10 +228,19 @@ function iterate_rrt_connect() {
 }
 
 function iterate_rrt_star() {
+    iterate++
+    if (iterate >= 500) {
+        iterate_rrt++
+    }
+
     var q_random = random_config();
     var goal_sample_prob = rand_num(0,1);
-    console.log(goal_sample_prob);
-    if (goal_sample_prob > .95) {
+    var iter_prob = (500-iterate_rrt)/iterate_rrt;
+    console.log(iter_prob);
+    if (iter_prob < .9) {
+        iter_prob = .9;
+    }
+    if (goal_sample_prob > iter_prob) {
         q_random = q_goal_config;
     }
     var ext_flag = extendRRT(T_a,q_random);
@@ -339,7 +350,8 @@ function extendRRT(tree,q_target) {
 
     var is_collision = kineval.poseIsCollision(rrt_q_new);
     var path_collision = interpolate_q_check(q_near,rrt_q_new);
-    if (!is_collision && !path_collision) {
+    var valid_joint_config = check_valid_joint_config(rrt_q_new);
+    if (!is_collision && !path_collision && valid_joint_config) {
         if (rrt_alg != 2) { // for RRT, RRT-Connect
             var node_dist = calc_L2_norm(rrt_q_new,q_near);
         } else { // RRT-Star
@@ -434,7 +446,7 @@ function rewired_cost(tree,curr_node,destination_node,path) {
 }
 
 function interpolate_q_check(q_near,rrt_q_new) {
-    var num_interp = 10;
+    var num_interp = 20;
     for (var iind = 0; iind < num_interp; iind++) {
         var interp_q = [];
         for (var jind = 0; jind < q_near.length; jind++) {
@@ -471,28 +483,89 @@ function random_config() {
     q_rand[1] = 0; 
 
     // Generate orientation of robot base (3,4,5) and the rest of the joints
-    for(var i = 3; i < q_rand.length; ++i) {
-        q_rand[i] = rand_num(0, 2 * Math.PI);
+    for(var i = 3; i < 6; ++i) {
+        q_rand[i] = rand_num(-Math.PI, Math.PI);
     } // need to consider joint type and limits!
-
+    for (var name in robot.joints) {
+        var joint_object = robot.joints[name];
+        var j_type = joint_object.type
+        var q_indices = q_names[name];
+        if (j_type == "prismatic" || j_type == "revolute") {
+            q_rand[q_indices] = rand_num(joint_object.limit.lower,joint_object.limit.upper);
+        } else if (j_type == "fixed") {
+            q_rand[q_indices] = 0;
+        } else { // continuous
+            q_rand[q_indices] = rand_num(-Math.PI, Math.PI);
+        }
+    }
     return q_rand;
 }
 
+function check_valid_joint_config(q) {
+    var joint_check_ret = true;
+    for (var name in robot.joints) {
+        var joint_object = robot.joints[name];
+        var j_type = joint_object.type
+        var q_indices = q_names[name];
+        if (j_type == "prismatic" || j_type == "revolute") {
+            if (q[q_indices] > joint_object.limit.upper) {
+                joint_check_ret = false;
+                console.log("out of bounds revolute/prismatic!")
+            } else if (q[q_indices] < joint_object.limit.lower) {
+                joint_check_ret = false;
+                console.log("out of bounds revolute/prismatic!")
+            }
+        } else if (j_type == "fixed") {
+            if (q[q_indices] != 0) {
+                joint_check_ret = false;
+                console.log("out of bounds fixed joint!")
+            }
+        } else { // continuous
+            if (q[q_indices] > Math.PI || q[q_indices] < -Math.PI) {
+                joint_check_ret = false;
+                console.log("not within 2*pi!")
+            }
+        }
+    }
+    return joint_check_ret;
+}
+// function new_config(q_rand,q_near) {
+//     var dir_vec = vector_subtract(q_rand,q_near); // normalize!
+//     var dir_mag = calc_L2_norm(q_rand,q_near); // not sure
+//     var q_new = [];
+//     var unit_dir_vec = []
+//     // var n_squares = Math.floor(eps / 0.1); // change to eps?
+//     // var unit_dir_vec = vector_normalize(dir_vec); 
+//     //Add dir_vec elements to i_index, j_index
+//     for (var iind = 0; iind < q_near.length; iind++) {
+//         unit_dir_vec.push(dir_vec[iind]/dir_mag);
+//         var q_added = q_near[iind] + rrt_eps * unit_dir_vec[iind];
+//         q_new.push(q_added);
+//     }
+//     var norm_q_new = normalize_joint_state(q_new)
+//     return norm_q_new;
+// }
+
 function new_config(q_rand,q_near) {
-    var dir_vec = vector_subtract(q_rand,q_near); // normalize!
-    var dir_mag = calc_L2_norm(q_rand,q_near); // not sure
-    var q_new = [];
-    var unit_dir_vec = []
+    var dir_vec = vector_subtract(normalize_joint_state(q_rand),q_near); // normalize!
+    var normalized = vector_normalize(dir_vec);
+    // var check = vector_magnitude(normalized);
     // var n_squares = Math.floor(eps / 0.1); // change to eps?
     // var unit_dir_vec = vector_normalize(dir_vec); 
     //Add dir_vec elements to i_index, j_index
+    // var q_total = [];
+    var q_new = [];
     for (var iind = 0; iind < q_near.length; iind++) {
-        unit_dir_vec.push(dir_vec[iind]/dir_mag);
-        var q_added = q_near[iind] + rrt_eps * unit_dir_vec[iind];
+        var q_added = q_near[iind] + rrt_eps * normalized[iind];
         q_new.push(q_added);
     }
-    var norm_q_new = normalize_joint_state(q_new)
-    return norm_q_new;
+    // var norm_q_total = normalize_joint_state(q_total)
+    // var normalized = vector_normalize(norm_q_total);
+    // for (var iind = 0; iind < q_near.length; iind++) {
+    //     var q_step = q_near[iind] + rrt_eps*normalized[iind];
+    //     q_new.push(q_step);
+    // }
+    return q_new;
 }
 
 function calc_L2_norm(a1,a2) { // assumes same length a1 and a2
@@ -571,9 +644,10 @@ function rand_num(lower,upper) {
 
 // Loops through all angles and puts them in the range 0 to 2pi
 function normalize_joint_state(q) {
+    var tpi = 2 * Math.PI;
     for(var i = 3; i < q.length; ++i) {
-        var tpi = 2 * Math.PI;
-        q[i] = Math.abs(q[i] % tpi);
+        // q[i] = Math.abs(q[i] % tpi);
+        q[i] = Math.abs(q[i] % Math.PI);
     }
     // Set y to 0.
     q[1] = 0;
@@ -586,7 +660,24 @@ function normalize_joint_state(q) {
     q[3] = 0;
     // q[4] = 0;
     q[5] = 0;
+    for (var name in robot.joints) {
+        var joint_object = robot.joints[name];
+        var j_type = joint_object.type
+        var q_indices = q_names[name];
+        if (j_type == "prismatic" || j_type == "revolute") {
+            if (q[q_indices] > joint_object.limit.upper) {
+                q[q_indices] = joint_object.limit.upper;
+            } else if (q[q_indices] < joint_object.limit.lower) {
+                q[q_indices] = joint_object.limit.upper;
+            }
+        } else if (j_type == "fixed") {
+            q[q_indices] = 0;
+        } else { // continuous
+            q[q_indices] = q[q_indices] % Math.PI;
+        }
+    }
 
+    var norm_q = vector_normalize(q);
 
     return q;
 }
