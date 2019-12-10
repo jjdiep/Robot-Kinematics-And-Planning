@@ -477,7 +477,7 @@ function iterateRRT() {
         var found = false;
         destination_node = T_a_original.vertices[0].vertex;
         var path = [];
-        found = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],false,path);
+        found = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],destination_node,false,path);
         var final_path = path.reverse();
         drawHighlightedPath(final_path);
         return "succeeded";
@@ -518,11 +518,11 @@ function iterateRRTConnect() {
         var found = false;
         destination_node = T_a_original.vertices[0].vertex;
         var path1 = [];
-        dfsPath1 = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],false,path1);
+        dfsPath1 = dfsPath(T_a_original,T_a_original.vertices[T_a_original.newest],destination_node,false,path1);
 
         var path2 = [];
         destination_node = T_b_original.vertices[0].vertex;
-        dfsPath2 = dfsPath(T_b_original,T_b_original.vertices[T_b_original.newest],true,path2);
+        dfsPath2 = dfsPath(T_b_original,T_b_original.vertices[T_b_original.newest],destination_node,true,path2);
         var final_path = (dfsPath1.reverse()).concat(dfsPath2);
 
         drawHighlightedPath(final_path);
