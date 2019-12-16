@@ -1,8 +1,9 @@
 14: Diep, Justin
 567 EECS F19
 
-Assignment 1 feature 1 (0.00/0): PathPlan_Honor: DUE
+Assignment 1 feature 1 (0.00/0): PathPlan_Honor: CHECK
     error: license integrity not maintained (NO GRADE until proper license assertion)
+    regrade: honor code sufficiently asserted via licence file
 Assignment 1 feature 2 (4.00/4): PathPlan_Heap: CHECK
     comment: good work
 Assignment 1 feature 3 (8.00/8): PathPlan_AStar: CHECK
@@ -47,7 +48,7 @@ Assignment 4 feature 22 (2.00/2): FSMDance_JointLimits: CHECK
     
 Assignment 4 feature 23 (2.00/2): FSMDance_Prismatic: CHECK
     
-Assignment 4 feature 24 (0.00/2): FSMDance_Rosbridge: PENDING
+Assignment 4 feature 24 (2.00/2): FSMDance_Rosbridge: CHECK
     
 Assignment 5 feature 25 (0.00/6): IK_Jacobian: DUE
     error: endeffector does not monotonically decrease error to local minimum
@@ -57,22 +58,23 @@ Assignment 5 feature 27 (0.00/3): IK_JPseudoinverse: DUE
     error: endeffector does not monotonically decrease error to local minimum
 Assignment 5 feature 28 (6.00/6): IK_EulerAngles: CHECK
     
-Assignment 6 feature 29 (0.00/4): MotionPlan_Collision: PENDING
+Assignment 6 feature 29 (4.00/4): MotionPlan_Collision: CHECK
     
-Assignment 6 feature 30 (0.00/2): MotionPlan_2DRRTConnect: PENDING
+Assignment 6 feature 30 (2.00/2): MotionPlan_2DRRTConnect: CHECK
     
-Assignment 6 feature 31 (0.00/6): MotionPlan_CSpaceRRTConnect: PENDING
-    
+Assignment 6 feature 31 (0.00/6): MotionPlan_CSpaceRRTConnect: DUE
+    error: planner does not perform RRT-Connect algorithm
 Assignment 6 feature 32 (0.00/6): MotionPlan_RRTStar: PENDING
     
-Assignment 7 feature 33 (0.00/12): Pitch: PENDING
+Assignment 7 feature 33 (12.00/12): Pitch: CHECK
     
-Assignment 7 feature 34 (0.00/6): Pitch_Advanced: PENDING
+Assignment 7 feature 34 (6.00/6): Pitch_Advanced: CHECK
     
 Assignment 8 feature 35 (0.00/4): Advanced: PENDING
-    
+    comment: no advanced extensions requested
+    comment: double pendulum derivation extension not requested
 Quiz 1: 2.75 of 4
 Quiz 2: 4.00 of 4
 Quiz 3: 2.83 of 4
 Quiz 4: 2.50 of 4
-Quiz 5: 4.00 of 4
+Quiz 5: 5.00 of 4
