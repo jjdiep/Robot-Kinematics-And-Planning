@@ -1,5 +1,5 @@
 // PI ROBOT
-// BY Justin Diep, modified for regrading 12/14/19
+// BY Justin Diep
 // Note: I had to modify the link sizes from the original ROS file in an attempt to make the robot look realistic and as a result, the joints are offset visually from the link ends.
 //   CREATE ROBOT STRUCTURE
 
@@ -12,7 +12,7 @@ robot = new Object();
 
 robot.name = "pi_robot";
 
-robot.origin = {xyz: [0,0.0425,0], rpy:[0,-Math.PI,0]};  // held a bit over the ground plane
+robot.origin = {xyz: [0,0.0425,0], rpy:[0,0,0]};  // held a bit over the ground plane
 
 robot.base = "base_link";
 
@@ -51,14 +51,14 @@ robot.links = {
 // specify name of endeffector frame
 robot.endeffector = {};
 robot.endeffector.frame = "left_hand_joint";
-robot.endeffector.position = [[0],[0],[0.9],[1]]
+robot.endeffector.position = [[0],[0.9],[0],[1]]
 
 // * * * Joint Definitions * * * -->
 
 robot.joints = {};
 
 robot.joints.cpu_joint = {parent: "base_link", child:"cpu_link"};
-robot.joints.cpu_joint.origin = {xyz: [0.025,0,0.085], rpy: [-Math.PI/2,Math.PI,0]};
+robot.joints.cpu_joint.origin = {xyz: [0.025,0,0.085], rpy: [0,0,0]};
 robot.joints.cpu_joint.axis = [0.0,0,1]; 
 
     // <joint name="cpu_joint" type="fixed">
@@ -69,7 +69,7 @@ robot.joints.cpu_joint.axis = [0.0,0,1];
 
 robot.joints.base_laser_joint = {parent: "base_link", child:"base_laser"};
 robot.joints.base_laser_joint.origin = {xyz: [0,0,0.07], rpy: [0,0,0]};
-robot.joints.base_laser_joint.axis = [0.0,0,1];
+robot.joints.base_laser_joint.axis = [0.0,1,0];
 
     // <joint name="base_laser_joint" type="fixed">
     //     <parent link="base_link"/>
@@ -79,7 +79,7 @@ robot.joints.base_laser_joint.axis = [0.0,0,1];
 
 robot.joints.upper_base_joint = {parent: "cpu_link", child:"upper_base_link"};
 robot.joints.upper_base_joint.origin = {xyz: [0,0,0.07], rpy: [0,0,0]};
-robot.joints.upper_base_joint.axis = [0.0,0,1];
+robot.joints.upper_base_joint.axis = [0.0,1,0];
 
     // <joint name="upper_base_joint" type="fixed">
     //     <parent link="cpu_link"/>
@@ -344,8 +344,8 @@ robot.links_geom_imported = false;
 
 links_geom = {};
 
-links_geom["base_link"] = new THREE.CubeGeometry( 2*0.32, 2*0.085, 2*0.26 );
-links_geom["base_link"].applyMatrix( new THREE.Matrix4().makeTranslation(0,0,0.0425) );
+links_geom["base_link"] = new THREE.CubeGeometry( 2*0.32, 2*0.26, 2*0.085 );
+links_geom["base_link"].applyMatrix( new THREE.Matrix4().makeTranslation(0,0.0425,0) );
 
 links_geom["base_laser"] = new THREE.CubeGeometry(2*0.025,2*0.025, 2*0.07);
 links_geom["base_laser"].applyMatrix( new THREE.Matrix4().makeTranslation(0, 0, 0) );

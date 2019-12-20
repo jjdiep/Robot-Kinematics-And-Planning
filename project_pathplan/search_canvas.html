@@ -125,7 +125,7 @@ function initSearch() {
 
     // specify start and goal configurations
     q_start_config = [0,0];
-    q_goal_config = [0,1]; // changed for testing JD
+    q_goal_config = [4,4]; // changed for testing JD
     q_init = q_start_config;
     q_goal = q_goal_config;
 
@@ -350,16 +350,209 @@ function iterateGraphSearch() { // Assignment 1
 
         case "greedy-best-first": // sorted via min heap to create priority queue, fscore = hscore, sort by heuristic to goal
         case "A-star": // sorted via min heap to create priority queue, priority queue fscore = hscore + gscore, sort by heuristic to goal and path edge cost
+            var priority = 0;
             var len_queue = neighbor_queue.length;
             // var tmp_queue = [];
             for (i_node = 0; i_node < len_queue; i_node++) {
                 var tmp = neighbor_queue[i_node];
-                minheap_insert(visit_queue, tmp);
+                if (priority == 0) {
+                    minheap_insert(visit_queue, tmp);
+                } 
+                //else if (priority == 1) {
+                //     init_insert(tree,test[i],new_node);
+                //     if (new_node.lr == 0) return;
+
+                //     // find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
+                //     // (Note: update the h of each node, then check if the node is unbalanced)
+                //     var curr = new_node.parent;
+                //     var prev = new_node;
+                //     var y = prev;
+                //     var x;
+
+                //     while(curr != null) {
+                //         var left_h = 0;
+                //         var right_h = 0;
+                //         if (curr.left != null) {
+                //             left_h = curr.left.height;
+                //         }
+                //         if (curr.right != null) {
+                //             right_h=curr.right.height;
+                //         }
+                //         curr.height = Math.max(left_h, right_h) + 1;
+                //         var balance_curr = left_h - right_h;
+                //         //left longer
+                //         if (balance_curr > 1) {
+                //             if (x.lr == -1) {
+                //                 var xl = 0; var yl = 0; var xr = 0;
+                //                 curr.left = x;
+                //                 x.parent = curr;
+                //                 x.lr = 1;
+                //                 var tmp = x.left;
+                //                 x.left = y; y.parent = x; y.lr = 1; y.right = tmp;
+                //                 if (tmp != null) {
+                //                     tmp.parent = y;
+                //                     tmp.lr = -1;
+                //                     xl = tmp.height;
+                //                 }
+                //                 if (y.left != null) {yl = y.left.height};
+                //                 y.height = Math.max(xl,yl)+1;
+                //                 if(x.right != null) {xr = x.right.height};
+                //                 x.height = Math.max(y.height,xr)+1;
+                //                 curr.height = Math.max(x.height,right_h) + 1;
+                //                 //exchange pointer x with y
+                //                 tmp=x; x=y; y=tmp;
+                //             }
+                //             // on left
+                //             if (curr.parent != null) {
+                //                 if (curr.lr == 1) {
+                //                     curr.parent.left = y;
+                //                     y.parent = curr.parent;
+                //                     y.lr = 1;
+                //                 } else {
+                //                     curr.parent.right = y;
+                //                     y.parent = curr.parent;
+                //                     y.lr = -1;
+                //                 }
+                //             } else {
+                //                 y.parent = null;
+                //                 y.lr=0;
+                //             }
+                //             tmp = y.right;
+                //             y.right = curr;
+                //             curr.parent = y; curr.lr = -1; curr.left = tmp;
+                //             var yr = 0;
+                //             if (tmp != null) {
+                //                 tmp.parent = curr;
+                //                 tmp.lr = 1;
+                //                 yr = tmp.height;
+                //             }
+                //             curr.height=Math.max(yr,right_h)+1;
+                //             y.height=Math.max(y.left.height,y.right.height)+1;
+                //             if(y.parent != null) {
+                //                 var pl = 0;
+                //                 var pr = 0;
+                //                 if (y.parent.left != null) {pl = y.parent.left.height;}
+                //                 if (y.parent.right != null) {pr = y.parent.right.height;}
+                //                 y.parent.height=Math.max(pl,pr) + 1;
+                //             } else {
+                //                 tree = y;
+                //                 if (y.left != null) {y.left.parent = tree;}
+                //                 if (y.right != null) {y.right.parent = tree;}
+                //             }
+                //             break;
+                //         }
+
+                //         else if (balance_curr < -1) { //right longer  
+    
+                //             if (x.lr == 1) {
+                //                 var xl = 0; var yl = 0; var xr = 0;
+                //                 curr.right = x; x.parent = curr; x.lr = -1;
+                //                 var tmp = x.right;
+                //                 x.right = y;
+                //                 y.parent = x;
+                //                 y.lr = -1;
+                //                 y.left = tmp;
+                //                 if (tmp != null) {
+                //                     tmp.parent = y;
+                //                     tmp.lr = 1;
+                //                     xr = tmp.height;
+                //                 }
+                //                 if (y.left != null) yl = y.left.height;
+                //                 y.height = Math.max(xr,yl)+1;
+                //                 if(x.left != null) xl = x.left.height;
+                //                 x.height = Math.max(y.height,xl)+1;
+                //                 curr.height = Math.max(x.height,left_h)+1;
+                //                 //exchange pointer x with y
+                //                 tmp=x;
+                //                 x=y;
+                //                 y=tmp;
+                //             }
+                //             // on left
+                //             if (curr.parent != null) {
+                //                 if (curr.lr == -1) {
+                //                     curr.parent.right = y;
+                //                     y.parent = curr.parent;
+                //                     y.lr = -1;
+                //                 } else {
+                //                     curr.parent.left = y;
+                //                     y.parent = curr.parent;
+                //                     y.lr = 1;
+                //                 }
+                //             } else {
+                //                 y.parent=null;
+                //                 y.lr=0;
+                //             }
+                //             tmp = y.left;
+                //             y.left = curr;
+                //             curr.parent = y;
+                //             curr.lr = 1;
+                //             curr.right = tmp;
+                //             var yl=0;
+                //             if(tmp != null){
+                //                 tmp.parent = curr;
+                //                 tmp.lr = -1;
+                //                 yl=tmp.height;
+                //             }
+                //             curr.height=Math.max(yl,left_h)+1;
+                //             y.height=Math.max(y.left.height,y.right.height)+1;
+                //             if(y.parent!=null){
+                //                 var pl=0;
+                //                 var pr=0;
+                //                 if(y.parent.left!=null) pl=y.parent.left.height;
+                //                 if(y.parent.right!=null) pr=y.parent.right.height;
+                //                 y.parent.height=Math.max(pl,pr)+1;
+                //             } else {
+                //                 tree=y;
+                //                 if(y.left!=null) y.left.parent=tree;
+                //                 if(y.right!=null) y.right.parent=tree;
+                //             }
+                //             break;
+                //         }
+
+                //         x = prev;
+                //         y = curr;
+                //         prev = curr;
+                //         curr = curr.parent;
+                //     }
+                // } // end insert
             }
+
             neighbor_queue = [];
             if ( (visit_queue.length != 0) && (!(f_xgoal <= eps/2) || !(f_ygoal <= eps/2)) ) {
                 // visit_queue = tmp_queue
-                visit_node = minheap_extract(visit_queue);
+                if (priority == 0) {
+                    visit_node = minheap_extract(visit_queue);
+                }
+                // else if (priority == 1) {
+                //     var curr = tree;
+                //     var min_value;
+                //     while (curr!=null) {
+                //         if (curr.left == null) {
+                //             if(curr.parent==null) {
+                //                 min_value=curr.value;
+                //                 if(curr.right!=null) {
+                //                     curr.value=curr.right.value;
+                //                     curr.right=null;
+                //                     curr.height=1;
+                //                 }
+                //                 else tree=null;
+                //             } else {
+                //                 min_value=curr.value;
+                //                 var tmp=curr.parent;
+                //                 tmp.left=curr.right;
+                //                 if (curr.right != null) {
+                //                     curr.right.parent=tmp;
+                //                     curr.right.lr=1;
+                //                 }
+                //                 curr=tmp;
+                //                 break;
+                //             }
+                //         }
+                //         curr = curr.left;
+                //     }
+                    
+                // } // end extract
+
                 search_iteration();
                 return "iterating"
             } else if ( (f_xgoal <= eps/2) && (f_ygoal <= eps/2) ) {
@@ -377,6 +570,42 @@ function iterateGraphSearch() { // Assignment 1
         default:
             // do nothing?
             break;
+    }
+}
+
+// new node class for AVL tree
+function node(l,r,p,lr,v,h) {
+    this.left = l;
+    this.right = r;
+    this.parent=p;
+    this.atright=lr;//right child of parent:-1; left:1.
+    this.value = v;
+    this.height = h;
+}
+
+// AVL tree initial node insert
+function init_insert(tree,m,new_node) {
+    var prev = tree;
+    var curr = tree;
+    while (curr != null) {
+        prev=curr;
+        if (curr.value == m) {
+            return 0;
+        }
+        else if(curr.value<m){
+            curr = curr.right;
+        } else {
+            curr = curr.left;
+        }
+    }
+    if (prev.value < m) {
+        new_node.parent=prev;
+        new_node.lr=-1;
+        prev.right=new_node;}
+    else if (prev.value > m) {
+        new_node.parent=prev;
+        new_node.lr=1;
+        prev.left=new_node;
     }
 }
 
@@ -764,6 +993,7 @@ function initRRT(q) {
     tree.vertices[0] = {};
     tree.vertices[0].vertex = q;
     tree.vertices[0].edges = [];
+    tree.vertices[0].visited = false;
     tree.vertices[0].distance = 0;
     // tree.vertices[0].indices = []; // added by JD
     // maintain index of newest vertex added to tree
@@ -779,6 +1009,7 @@ function insertTreeVertex(tree,q,dist) {
     new_vertex.edges = [];
     new_vertex.vertex = q;
     new_vertex.distance = dist;
+    new_vertex.visited = false;
     // new_vertex.indices = [];
     tree.vertices.push(new_vertex);
 
@@ -995,6 +1226,7 @@ function Rewire(tree,z_neighbor_list) {
         var z_new_path_cost = z_new_dist + z_new_cost;
         var pathCollision = interpolate_q_check(rrt_q_new,tree.vertices[z_neighbor_list[iind]].vertex);
         if (z_new_path_cost < prior_z_path_cost && !pathCollision) {
+            tree.vertices[z_neighbor_list[iind]].edges.shift(); // test!
             insertTreeEdge(tree, tree.newest, z_neighbor_list[iind]);
             var new_edge = tree.vertices[z_neighbor_list[iind]].edges.pop();
  
@@ -1002,7 +1234,8 @@ function Rewire(tree,z_neighbor_list) {
             tree.vertices[z_neighbor_list[iind]].distance = z_new_path_cost;
             var rewired_z_path = [];
             var destination_node = tree.vertices[0].vertex;
-            rewired_cost(tree,tree.vertices[z_neighbor_list[iind]],destination_node,rewired_z_path); 
+            // rewired_cost(tree,tree.vertices[z_neighbor_list[iind]],destination_node,rewired_z_path);
+            bfs_fringe(tree,tree.vertices[z_neighbor_list[iind]]);
         }
     }
 }
@@ -1033,6 +1266,19 @@ function rewired_cost(tree,curr_node,destination_node,path) {
     path[path.length-1].distance=0;// not sure if this line is necessary or not, just in case;
     for (i = path.length-1; i >=1; i--) {
        path[i-1].distance = path[i].distance+calc_L2_norm(path[i].vertex, path[i-1].vertex);
+    }
+}
+
+function bfs_fringe(tree,curr_node) {
+    curr_node.distance = curr_node.edges[0].distance + calc_L2_norm(curr_node.edges[0].vertex, curr_node.vertex);
+    to_visit_nodes = [];
+    for (i = 1; i < curr_node.edges.length; i++) {
+        to_visit_nodes.unshift(curr_node.edges[i]);
+    }
+    while (to_visit_nodes.length > 0) {
+        var child_nodes = to_visit_nodes.shift();
+        child_nodes.distance = child_nodes.edges[0].distance + calc_L2_norm(child_nodes.edges[0].vertex, child_nodes.vertex);
+        to_visit_nodes.concat(child_nodes.edges.slice(1,child_nodes.edges.length));
     }
 }
 

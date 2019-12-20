@@ -49,6 +49,8 @@
 /////     MAIN FUNCTION CALLS
 //////////////////////////////////////////////////
 
+
+
 // initialize threejs scene, user input, and robot kinematics
 init();
 
@@ -110,8 +112,42 @@ function init() {
     // initialize rendering scene and user interface
     createScene();
 
+    //initialize random setpoint code
+    setpoints = [];
+    num_setpoints = 0;
+    trials_on = " off ";
+    t_press = true;
 }
 
+// Advanced Extension for Assignment-2
+function random_setpoint_trial() {
+    // initialize setpoint
+    if (setpoints.length == 0) { 
+        pendulum.desired = rand_num(-Math.PI,Math.PI);
+        console.log("pendulum desired: " + pendulum.desired);
+        setpoints.push(pendulum.desired);
+        elapsed_time = 0;
+    }
+    // add new setpoint if pendulum reaches desired setpoint for 2 seconds
+    if (Math.abs(pendulum.angle - pendulum.desired) <= servo_error_threshold) {
+        elapsed_time = elapsed_time + dt;     
+        if (elapsed_time >= 2) {
+            pendulum.desired = rand_num(-Math.PI,Math.PI);
+            console.log(pendulum.desired);
+            setpoints.push(pendulum.desired);
+            elapsed_time = 0; 
+        }
+    } else { // in case pendulum has error greater than the threshold and/or is oscillating
+        elapsed_time = 0;
+    }
+
+    return setpoints.length;
+}
+
+function rand_num(lower,upper) {
+    var num = Math.random() * (upper - lower) + lower;
+    return num;
+}
 
 //////////////////////////////////////////////////
 /////     ANIMATION AND INTERACTION LOOP
@@ -143,6 +179,14 @@ function animate() {
     if ( keyboard.pressed("q") )
         pendulum.desired += -0.05; // move the desired angle for the servo
 
+    if ( keyboard.pressed("t") ) { // starts random setpoint trials (Advanced Extension)
+        t_press = true;
+    }
+    if ( keyboard.pressed("y") ) { // ends random setpoint trials (Advanced Extension)
+        t_press = false;
+    }
+
+
 
     // add user force from user interaction
     if ( keyboard.pressed("d") )
@@ -152,6 +196,15 @@ function animate() {
 
     // STENCIL: implement servo controller
     else {
+    if (t_press) { // runs random setpoint trials (Advanced Extension)
+        random_setpoint_trial(); 
+        num_setpoints = setpoints.length-1;
+        console.log(num_setpoints);
+        trials_on = " on ";
+    } else {
+        setpoints = [];
+        trials_on = " off ";
+    }
 
     var error = pendulum.desired - pendulum.angle;
 
@@ -273,6 +326,9 @@ function animate() {
         " length = " + pendulum.length.toFixed(2) +
         "<br>" +
         " gravity = " + gravity.toFixed(2) +
+        "<br><br> Random Setpoint Trials: " + trials_on + 
+        " <br> " +
+        " Number of setpoints reached: " + num_setpoints +
         "<br><br>  Keys <br> " +
         " [0-4] - select integrator " +
         "<br>" +
@@ -282,8 +338,11 @@ function animate() {
         "<br>" +
         " c|x - toggle servo " +
         "<br>" +
-        " s - disable servo "
-
+        " s - disable servo " +
+        "<br>" +
+        " t - toggle on random setpoint trials " +
+        "<br>" +
+        " y - toggle off random setpoint trials "
     ;
 
     // threejs rendering update

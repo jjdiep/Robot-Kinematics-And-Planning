@@ -28,7 +28,7 @@ console.log("KinEval: Kinematic Evaluator 3");
 
 // function to initialize KinEval and start its animation loop
 kineval.start = function kinevalExecute() {
-
+    // my_final_path_test = []; // added for debugging JD
     console.log(" **** >>> kineval.start"); 
     // KinEval should not do anything until there is a robot and a world loaded
     var x;
@@ -329,7 +329,6 @@ kineval.initParameters = function initParameters() {
     kineval.params.ik_orientation_included = false;
     kineval.params.ik_steplength = 0.1;
     kineval.params.ik_pseudoinverse = false;
-
     // initialize flags for executing planner
     kineval.params.generating_motion_plan = false; // monitor specifying state of motion plan generation
     kineval.params.update_motion_plan = false; // sets request to generate motion plan 
@@ -609,7 +608,7 @@ kineval.initGUIDisplay = function initGUIDisplay () {
 kineval.initRobotLinksGeoms = function initRobotLinksGeoms() {
 
     // KE T: initialize this variable properly 
-    robot.collision = false; 
+    robot.collision = false;
 
         // KE 2 : put robot_material into correct object (fixed below?)
         // KE ! : this may need to be moved back into link for loop
@@ -625,7 +624,7 @@ kineval.initRobotLinksGeoms = function initRobotLinksGeoms() {
         // KE 2 : create global color constants
         if (typeof robot.links_geom_imported === "undefined")
             robot.links[x].geom = new THREE.Mesh( links_geom[x], robot_material);
-        else if (!robot.links_geom_imported || robot.name === "pi_robot") // slightly modified since PI robot is technically from ROS (and heavily modified) but lacks THREE.Mesh
+        else if (!robot.links_geom_imported) // slightly modified since PI robot is technically from ROS (and heavily modified) but lacks THREE.Mesh
             robot.links[x].geom = new THREE.Mesh( links_geom[x], robot_material);
         else
             robot.links[x].geom = links_geom[x];

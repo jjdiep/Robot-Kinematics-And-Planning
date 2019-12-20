@@ -23,7 +23,6 @@ function matrix_copy(m1) {
     //   matrix_multiply, added additional code to work for row vector case
 function matrix_multiply(m1, m2) {
 
-    var i,j,k;
     var m1_col_len;
     var f_m1_row, f_m2_row;
     var mat = [];
@@ -48,10 +47,10 @@ function matrix_multiply(m1, m2) {
         var mat_m = m1_row_len;
         var mat_n = m2_col_len;
         mat = matrix_zeroes(mat_m, mat_n);
-        for (i=0;i<m1_row_len;i++) { // for each row of m1
+        for (var i=0;i<m1_row_len;i++) { // for each row of m1
             // mat[i] = [];
-            for (j=0;j<m2_col_len;j++) { // for each column of m2
-                for (k=0;k<m1_col_len;k++) { // for each column of m1
+            for (var j=0;j<m2_col_len;j++) { // for each column of m2
+                for (var k=0;k<m1_col_len;k++) { // for each column of m1
                     if (f_m1_row) {
                         var m1vec = m1[k];
                     } else {
@@ -73,6 +72,18 @@ function matrix_multiply(m1, m2) {
         return null; // not dimensionally correct
     }
 }
+
+function matrix_vector_multiply(m1, v1) {
+    var mat = matrix_zeroes(m1.length,1);
+    var test = m1[0].length;
+    for (var i=0;i<m1.length;i++) { // for each row of m1
+        for (var j=0;j<m1[0].length;j++) { // for each col of m1
+            mat[i][0] += m1[i][j] * v1[j][0];
+        }
+    }
+    return mat; 
+}
+
 
 // helper function for matrix initialization with zeroes
 function matrix_zeroes(m, n) {
@@ -340,4 +351,15 @@ function extract_euler_angles(m1) {
     // phi_1 = Math.atan2(s_1*m1[2][0]-c_1*m1[1][0],c_1*m1[1][1]-s_1*m1[2][1]);
     // var rpy = [theta_1, psi_1, phi_1]; 
     return rpy;
+}
+
+function calc_L2_norm(a1,a2) { // assumes same length a1 and a2
+    var adiff = [];
+    var asum = 0;
+    for (var iind = 0; iind < a1.length; iind++) {
+        adiff.push((a1[iind] - a2[iind]) * (a1[iind] - a2[iind]));
+        asum += adiff[iind];
+    }
+    var adist = Math.sqrt(asum);
+    return adist;
 }

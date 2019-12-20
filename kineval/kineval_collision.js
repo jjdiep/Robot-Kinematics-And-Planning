@@ -42,6 +42,22 @@ kineval.robotIsCollision = function robot_iscollision() {
     collision_result = kineval.poseIsCollision(q_robot_config);
 
     robot.collision = collision_result;
+    // if (collision_result != false) {
+    //     tree_add_bad_vertex(collision_tree,q_robot_config,0);
+    // }
+    //////////////////////////////////////I WROTE THIS/////////////////////////////////////
+    my_collision_check = []; // for debugging
+    if (my_final_path_test != null) { 
+        for (var i = 0; i < kineval.motion_plan.length; i++) {
+            my_collision_check.push(kineval.poseIsCollision(kineval.motion_plan[i]));
+        }
+    }
+    if (collision_result !== false) {
+        console.log("running actual collision: ", JSON.stringify(collision_result));
+        console.log("q_config in collision: ", JSON.stringify(q_robot_config));
+        console.log("robot origin: ", robot.origin.xform)
+    }
+    ///////////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -60,20 +76,28 @@ kineval.poseIsCollision = function robot_collision_test(q) {
     var xyz = [q[0],q[1],q[2]];
     var rpy = [q[3],q[4],q[5]];
 
-    var ms = kineval.get_transformation_matrix(xyz,rpy);
+    // var ms = kineval.get_transformation_matrix(xyz,rpy);
+
+    var base_transform = kineval.get_transformation_matrix(xyz,rpy);
+
+    if (robot.links_geom_imported === true) {
+
+        var ros_transform = matrix_multiply(generate_rotation_matrix_X(-Math.PI/2),generate_rotation_matrix_Z(-Math.PI/2));
+        base_transform = matrix_multiply(base_transform,ros_transform);
+
+    }
 
     var mat_stack = [];
 
-    // mat_stack.push(generate_identity(4));
-    mat_stack.push(ms);
-    mat_stack.push(FKBaseTransform);
+    mat_stack.push(generate_identity(4));
+    mat_stack.push(base_transform);
 
 
     // Invariant: ms is the xform matrix associated with the link
     // that we pass to traverse_link
 
     var base_link = robot.links[robot.base];
-    return traverse_collision_forward_kinematics_link(base_link,ms,q,mat_stack);
+    return traverse_collision_forward_kinematics_link(base_link,base_transform,q,mat_stack); // not true false!
 }
 
 // Joint is a joint object e.g. robot.joints[""]
@@ -98,11 +122,11 @@ function traverse_collision_forward_kinematics_joint(joint,mstack,q,mat_stack) {
 
     // Add in rotation due to quaternion and multiply transform_mat by
     // the quaternion matrix.
-    if (joint.type == 'prismatic') {
+    if (joint.type === 'prismatic') {
         var trans = [joint.axis[0]*q[index], joint.axis[1]*q[index], joint.axis[2]*q[index]];
         var rot = [0,0,0];
         var q_matrix = kineval.get_transformation_matrix(trans,rot);
-    } else if (joint.type == 'fixed') {
+    } else if (joint.type === 'fixed') {
         var q_matrix = kineval.get_transformation_matrix([0,0,0],[0,0,0]);
     } else {
         var q_r = quaternion_from_axisangle(joint.axis,q[index]);
@@ -118,12 +142,11 @@ function traverse_collision_forward_kinematics_joint(joint,mstack,q,mat_stack) {
     // --------------------------------------------------------------
 
     // Set xform by multiplying with stack top
-    var ms_top = mat_stack[mat_stack.length - 1];
-    //console.log("Top of ms:");
-    //console.log(JSON.stringify(ms));
-    var composed_mat = matrix_multiply(ms_top, mstack);
+    var matrix_top = mat_stack[mat_stack.length - 1];
 
-    mstack = composed_mat;
+    var transform_mat = matrix_multiply(matrix_top, mstack);
+
+    mstack = transform_mat;
 
     // Push xform onto stack
     mat_stack.push(mstack);
@@ -139,9 +162,8 @@ function traverse_collision_forward_kinematics_joint(joint,mstack,q,mat_stack) {
 }
 function traverse_collision_forward_kinematics_link(link,mstack,q,mat_stack) {
 
-    /* test collision FK
-    console.log(link);
-    */
+    
+    // console.log("test collision FK", link);
     if (typeof link.visual !== 'undefined') {
         var local_link_xform = matrix_multiply(mstack,generate_translation_matrix(link.visual.origin.xyz[0],link.visual.origin.xyz[1],link.visual.origin.xyz[2]));
     }
@@ -152,7 +174,7 @@ function traverse_collision_forward_kinematics_link(link,mstack,q,mat_stack) {
     // test collision by transforming obstacles in world to link space
 
 
-    // mstack_inv1 = numeric.inv(mstack);
+    // mstack_inv = numeric.inv(mstack);
     mstack_inv = matrix_invert_affine(mstack);
 
     var i;

@@ -1,0 +1,746 @@
+<!--|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/|
+||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/
+/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+
+    AVL Tree | JavaScript support functions
+
+    Justin Diep
+    ECE Robotics
+    University of Michigan
+
+    License: Michigan Honor License 
+
+|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/|
+||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/
+/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\-->
+<html>
+
+<body onload="init()">
+<script>
+function init() {
+  var test = [0,0,4,5,3,8,0,12];
+  //var test_tree = avltree_init(test.pop());
+  var tree=new node(null,null,null,0,test[0],0);
+  for (var i=1; i < test.length; i++) {
+      //avltree_insert(test_tree, test[i]);
+      var new_node=new node(null,null,null,0,test[i],1);;
+      init_insert(tree,test[i],new_node);
+      if(new_node.lr==0) return;
+      
+      //balance_tree(root,new_node);
+        //find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
+  //(Note: update the h of each node, then check if the node is unbalanced)
+  var curr = new_node.parent;
+  var prev=new_node;
+  var y=prev;
+  var x;
+  while(curr != null) {
+    var left_h=0;
+    var right_h=0;
+    if (curr.left!=null){left_h=curr.left.height;}
+    if (curr.right!=null){right_h=curr.right.height;}
+    curr.height =Math.max(left_h, right_h)+1;
+    var balance_curr=left_h-right_h;
+    //console.log("before:",prev.value,curr.value,left_h,right_h,balance_curr);
+    //left longer
+    if(balance_curr>1){
+      if(x.lr==-1){
+        var xl=0;
+        var yl=0;
+        var xr=0;
+        curr.left=x;
+        x.parent=curr;
+        x.lr=1;
+        var tmp=x.left;
+        x.left=y;
+        y.parent=x;
+        y.lr=1;
+        y.right=tmp;
+        if(tmp!=null){
+          tmp.parent=y;
+          tmp.lr=-1;
+          xl=tmp.height;
+        }
+        if(y.left!=null) yl=y.left.height;
+        y.height=Math.max(xl,yl)+1;
+        if(x.right!=null) xr=x.right.height;
+        x.height=Math.max(y.height,xr)+1;
+        curr.height=Math.max(x.height,right_h)+1;
+        //exchange pointer x with y
+        tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // on left
+      if(curr.parent!=null){
+        if (curr.lr == 1) {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        } else {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.right;
+      y.right = curr;
+      curr.parent = y;
+      curr.lr = -1;
+      curr.left = tmp;
+      var yr=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = 1;
+        yr=tmp.height;
+      }
+      curr.height=Math.max(yr,right_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height,tree.value,tree.height);
+      break;
+    }
+    //right longer  
+    else if(balance_curr<-1){
+      if(x.lr==1){
+        var xl=0;
+        var yl=0;
+        var xr=0;
+        curr.right=x;
+        x.parent=curr;
+        x.lr=-1;
+        var tmp=x.right;
+        x.right=y;
+        y.parent=x;
+        y.lr=-1;
+        y.left=tmp;
+        if(tmp!=null){
+          tmp.parent=y;
+          tmp.lr=1;
+          xr=tmp.height;
+        }
+        if(y.left!=null) yl=y.left.height;
+        y.height=Math.max(xr,yl)+1;
+        if(x.left!=null) xl=x.left.height;
+        x.height=Math.max(y.height,xl)+1;
+        curr.height=Math.max(x.height,left_h)+1;
+        //exchange pointer x with y
+        tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // on left
+      if(curr.parent!=null){
+        if (curr.lr == -1) {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        } else {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.left;
+      y.left = curr;
+      curr.parent = y;
+      curr.lr = 1;
+      curr.right = tmp;
+      var yl=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = -1;
+        yl=tmp.height;
+      }
+      curr.height=Math.max(yl,left_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height, tree.value, tree.left,tree.right);
+      break;
+    }
+    
+    x=prev;
+    y=curr;
+    prev=curr;
+    curr=curr.parent;
+   }
+  }
+      //console.log(test_tree.value);
+  
+  //extract minimum value
+  //avltree_extract_min(tree);
+  for(var i=1;i<=test.length;++i){
+  var curr = tree;
+  var min_value;
+  while (curr!=null) {
+    if (curr.left == null) {
+      if(curr.parent==null) {
+        min_value=curr.value;
+      if(curr.right!=null) {
+        curr.value=curr.right.value;
+        curr.right=null;
+        curr.height=1;}
+      else tree=null;
+      }
+      else{
+        min_value=curr.value;
+        var tmp=curr.parent;
+        tmp.left=curr.right;
+        if(curr.right!=null){
+          curr.right.parent=tmp;
+          curr.right.lr=1;
+        }
+        curr=tmp;
+        break;
+      }
+    }
+    curr=curr.left;
+  }
+  console.log("min:",min_value);
+  while(curr != null) {
+    var left_h=0;
+    var right_h=0;
+    if (curr.left!=null){left_h=curr.left.height;}
+    if (curr.right!=null){right_h=curr.right.height;}
+    curr.height =Math.max(left_h, right_h)+1;
+    var balance_curr=left_h-right_h;
+    //console.log("before:",prev.value,curr.value,left_h,right_h,balance_curr); 
+    //right longer  
+    if(balance_curr<-1){
+      var y=curr.right;
+      var x=y;
+      if(y.right==null){
+        x=y.left;
+        curr.right=x;
+        x.parent=curr;
+        x.lr=-1;
+        x.right=y;
+        y.parent=x;
+        y.lr=-1;
+        y.height=1;
+        x.height=2;
+
+        var tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // 
+      if(curr.parent!=null){
+        if (curr.lr == -1) {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        } else {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.left;
+      y.left = curr;
+      curr.parent = y;
+      curr.lr = 1;
+      curr.right = tmp;
+      var yl=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = -1;
+        yl=tmp.height;
+      }
+      curr.height=Math.max(yl,left_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height, tree.value, tree.left,tree.right);
+      break;
+    }
+    curr=curr.parent;
+  }
+
+  console.log("round ",i);
+  var curr_node=tree;
+  var array=[];
+  array.push(curr_node);
+  while(array.length>0){
+     curr_node=array.shift();
+     console.log(curr_node.value);
+     if(curr_node.left!=null) array.push(curr_node.left);
+     if(curr_node.right!=null) array.push(curr_node.right);
+ }
+
+}
+}
+
+function avltree_extract_min(tree) {
+  var curr = tree;
+  var min_value;
+  while (curr!=null) {
+    if (curr.left == null) {
+      if(curr.parent==null) {
+        curr.value=curr.right.value;
+        curr.right=null;
+        curr.height=1;
+        min_value=curr.value;
+      }
+      min_value=curr.value;
+      curr.parent.left=curr.right;
+      curr=curr.parent;
+      break;
+    }
+    curr=curr.left;
+  }
+  //balance_tree(root,new_node);
+  //find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
+  //(Note: update the h of each node, then check if the node is unbalanced)
+  
+  while(curr != null) {
+    var left_h=0;
+    var right_h=0;
+    if (curr.left!=null){left_h=curr.left.height;}
+    if (curr.right!=null){right_h=curr.right.height;}
+    curr.height =Math.max(left_h, right_h)+1;
+    var balance_curr=left_h-right_h;
+    //console.log("before:",prev.value,curr.value,left_h,right_h,balance_curr); 
+    //right longer  
+    if(balance_curr<-1){
+      var y=curr.right;
+      var x=y;
+      if(y.right==null){
+        x=y.left;
+        curr.right=x;
+        x.parent=curr;
+        x.lr=-1;
+        x.right=y;
+        y.parent=x;
+        y.lr=-1;
+        y.height=1;
+        x.height=2;
+
+        var tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // 
+      if(curr.parent!=null){
+        if (curr.lr == -1) {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        } else {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.left;
+      y.left = curr;
+      curr.parent = y;
+      curr.lr = 1;
+      curr.right = tmp;
+      var yl=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = -1;
+        yl=tmp.height;
+      }
+      curr.height=Math.max(yl,left_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height, tree.value, tree.left,tree.right);
+      break;
+    }
+    curr=curr.parent;
+  }
+      //console.log(test_tree.value);
+}
+
+
+
+// // create empty object 
+// avltree = {}; 
+function avltree_build(new_element) {
+  avltree_init(new_element);
+  avltree_search(tree,new_element);
+}
+
+// define init function for AVL tree
+// function avltree_init(root) {
+//   var tree = {};
+//   tree.vertices = [];
+//   tree.vertices[0] = {};
+//   tree.vertices[0].vertex = root;
+//   tree.vertices[0].left_child = [];
+//   tree.vertices[0].right_child = [];
+//   tree.vertices[0].height = 0;
+//   tree.vertices[0].idx = 0;
+//   return tree;
+// }
+
+function node(l, r,p,lr,v,h) {
+  this.left = l;
+  this.right = r;
+  this.parent=p;
+  this.atright=lr;//right child of parent:-1; left:1.
+  this.value = v;
+  this.height = h;
+}
+
+function avltree_insert(tree,m) {
+  var new_node=new node(null,null,null,0,m,1);;
+  init_insert(tree,m,new_node);
+  if(new_node.lr==0) return;
+  balance_tree(tree,new_node);
+  //console.log(tree.value);
+}
+
+
+function init_insert(tree,m,new_node) {
+  // if (tree == null) {
+  //   tree = new node(null,null,null,0,m,0);
+  //   return 0;
+  // }
+  var prev=tree;
+  var curr = tree;
+  while(curr!=null) {
+    prev=curr;
+    if(curr.value==m){
+      return 0;
+    }
+    else if(curr.value<m){
+      curr=curr.right;
+    }
+    else{
+      curr=curr.left;
+    }
+  }
+  if(prev.value<m){
+    new_node.parent=prev;
+    new_node.lr=-1;
+    prev.right=new_node;}
+  else if(prev.value>m){
+    new_node.parent=prev;
+    new_node.lr=1;
+    prev.left=new_node;}
+}
+
+function balance_tree(tree,new_node){
+  //find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
+  //(Note: update the h of each node, then check if the node is unbalanced)
+  var curr = new_node.parent;
+  var prev=new_node;
+  var y=prev;
+  var x;
+  while(curr != null) {
+    var left_h=0;
+    var right_h=0;
+    if (curr.left!=null){left_h=curr.left.height;}
+    if (curr.right!=null){right_h=curr.right.height;}
+    curr.height =Math.max(left_h, right_h)+1;
+    var balance_curr=left_h-right_h;
+    //console.log("before:",prev.value,curr.value,left_h,right_h,balance_curr);
+    //left longer
+    if(balance_curr>1){
+      if(x.lr==-1){
+        var xl=0;
+        var yl=0;
+        var xr=0;
+        curr.left=x;
+        x.parent=curr;
+        x.lr=1;
+        var tmp=x.left;
+        x.left=y;
+        y.parent=x;
+        y.lr=1;
+        y.right=tmp;
+        if(tmp!=null){
+          tmp.parent=y;
+          tmp.lr=-1;
+          xl=tmp.height;
+        }
+        if(y.left!=null) yl=y.left.height;
+        y.height=Math.max(xl,yl)+1;
+        if(x.right!=null) xr=x.right.height;
+        x.height=Math.max(y.height,xr)+1;
+        curr.height=Math.max(x.height,right_h)+1;
+        //exchange pointer x with y
+        tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // on left
+      if(curr.parent!=null){
+        if (curr.lr == 1) {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        } else {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.right;
+      y.right = curr;
+      curr.parent = y;
+      curr.lr = -1;
+      curr.left = tmp;
+      var yr=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = 1;
+        yr=tmp.height;
+      }
+      curr.height=Math.max(yr,right_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height,tree.value,tree.height);
+      break;
+    }
+    //right longer  
+    else if(balance_curr<-1){
+      if(x.lr==1){
+        var xl=0;
+        var yl=0;
+        var xr=0;
+        curr.right=x;
+        x.parent=curr;
+        x.lr=-1;
+        var tmp=x.right;
+        x.right=y;
+        y.parent=x;
+        y.lr=-1;
+        y.left=tmp;
+        if(tmp!=null){
+          tmp.parent=y;
+          tmp.lr=1;
+          xr=tmp.height;
+        }
+        if(y.left!=null) yl=y.left.height;
+        y.height=Math.max(xr,yl)+1;
+        if(x.left!=null) xl=x.left.height;
+        x.height=Math.max(y.height,xl)+1;
+        curr.height=Math.max(x.height,left_h)+1;
+        //exchange pointer x with y
+        tmp=x;
+        x=y;
+        y=tmp;
+      }
+      // on left
+      if(curr.parent!=null){
+        if (curr.lr == -1) {
+          curr.parent.right = y;
+          y.parent = curr.parent;
+          y.lr = -1;
+        } else {
+          curr.parent.left = y;
+          y.parent = curr.parent;
+          y.lr = 1;
+        }
+      }
+      else{
+        y.parent=null;
+        y.lr=0;
+      }
+      tmp = y.left;
+      y.left = curr;
+      curr.parent = y;
+      curr.lr = 1;
+      curr.right = tmp;
+      var yl=0;
+      if(tmp!=null){
+        tmp.parent = curr;
+        tmp.lr = -1;
+        yl=tmp.height;
+      }
+      curr.height=Math.max(yl,left_h)+1;
+      y.height=Math.max(y.left.height,y.right.height)+1;
+      if(y.parent!=null){
+        var pl=0;
+        var pr=0;
+        if(y.parent.left!=null) pl=y.parent.left.height;
+        if(y.parent.right!=null) pr=y.parent.right.height;
+        y.parent.height=Math.max(pl,pr)+1;
+      }
+      else {
+        tree=y;
+        if(y.left!=null) y.left.parent=tree;
+        if(y.right!=null) y.right.parent=tree;
+      }
+      //console.log("after:",y.value,x.value,curr.value,y.height,x.height,curr.height, tree.value, tree.left,tree.right);
+      break;
+    }
+    
+    x=prev;
+    y=curr;
+    prev=curr;
+    curr=curr.parent;
+  }
+
+  //rotate (4 situations)
+}
+// // define search function for AVL tree
+// function avltree_insert(tree, new_element) {
+//   var idx = 0;
+//   while ((tree.vertices[idx].left_child.length != 0) || (tree.vertices[idx].right_child.length != 0)) {
+//     if (new_element > tree.vertices[idx]) {
+//       if (tree.vertices[idx].right_child.length != 0) {
+//         tree.vertices[idx].right_child.idx = idx;
+//       } else {
+//         var h = Math.floor( (idx - 1)/ 2) + 1;
+//         node_insert(tree, new_element, h);
+//         tree.vertices[idx].right_child.push(tree.vertices[tree.newest]);
+//       }
+//     } else if (new_element < tree.vertices[idx]) {
+//       if (tree.vertices[idx].left_child.length != 0) {
+//         tree.vertices[idx].left_child.idx = idx;
+//       } else {
+//         var h = Math.floor( (idx - 1)/ 2) + 1;
+//         node_insert(tree, new_element, h);
+//         tree.vertices[idx].left_child.push(tree.vertices[tree.newest]);
+//       }
+//     }
+//   }
+// }
+
+// assign insert function within avltree object
+// function node_insert(tree, new_element, h) {
+//   var new_vertex = {};
+//   new_vertex.vertex = new_element;
+// 	new_vertex.left_child = [];
+// 	new_vertex.right_child = [];
+// 	new_vertex.height = h;
+//   new_vertex.idx = idx;
+// 	tree.vertices.push(new_vertex);
+//   tree.newest = tree.vertices.length - 1;
+// }
+// assign insert function within avltree object
+/* Note: because the avltree_insert function is an object, we can assign 
+      a reference to the function within the avltree object, which can be called
+      as avltree.insert
+*/
+// define balance function for AVL tree
+function avltree_balance(tree) {
+
+}
+
+// define extract function for AVL tree
+function avltree_extract(tree) {
+
+    // // STENCIL: implement your min binary heap extract operation
+    if (heap.length == 1) {
+       return heap.pop();
+    }
+    // Extract root of heap, replace with farthest right node
+    var lastHeap = heap.pop();
+    var minHeap = heap[0];
+    heap[0] = lastHeap;
+    
+    // Heapify
+    var elntIdx = 0;
+    var heaped = 0; 
+
+    while (!heaped) {
+      leftHeap = 2 * elntIdx + 1;
+      rightHeap = 2 * elntIdx + 2;
+      var tmp = heap[elntIdx];
+      if (leftHeap >= heap.length) {
+        break;
+      } else if (((rightHeap >= heap.length) && (heap[elntIdx] > heap[leftHeap])) || ((rightHeap < heap.length) && (heap[elntIdx] > heap[leftHeap]) && (heap[leftHeap] <= heap[rightHeap]))) {
+        heap[elntIdx] = heap[leftHeap];
+        heap[leftHeap] = tmp;
+        elntIdx = leftHeap;
+      } else if ((rightHeap  < heap.length) && (heap[elntIdx] > heap[rightHeap]) && (heap[leftHeap] > heap[rightHeap])) {
+        heap[elntIdx] = heap[rightHeap];
+        heap[rightHeap] = tmp;
+        elntIdx = rightHeap;
+      } else {
+        break;
+      }
+    }
+  return minHeap;
+}
+
+// assign extract function within minheaper object
+
+    // STENCIL: ensure extract method is within minheaper object
+
+</script>
+</body>
+</html>
+

@@ -66,18 +66,20 @@ kineval.iterateIK = function iterate_inverse_kinematics(endeffector_target_world
     kineval.kinChain(endeffector_joint);
     var test = kinChain;
     // Find position of endeffector in the world frame
-    endeffector_world = matrix_multiply(robot.joints[robot.endeffector.frame].xform,endeffector_position_local);
+    // endeffector_world = matrix_multiply(robot.joints[robot.endeffector.frame].xform,endeffector_position_local);
+    var endeffector_world_loc = matrix_multiply(robot.joints[endeffector_joint].xform,endeffector_position_local);
 
     // Already obtained via Chad's code
     // Calculate Geometric Joint Jacobian
-    var j1 = kineval.generate_jacobian(endeffector_world);
+    var j1 = kineval.generate_jacobian(endeffector_world_loc);
 
-    // Calculate Inverse Jacobian
+    // // Calculate Inverse Jacobian
     var j1_inv = kineval.matrix_jacobian_inverse(j1);
-    
-    var end_rotation = [[robot.joints[robot.endeffector.frame].xform[0][0],robot.joints[robot.endeffector.frame].xform[0][1],robot.joints[robot.endeffector.frame].xform[0][2]],
-                        [robot.joints[robot.endeffector.frame].xform[1][0],robot.joints[robot.endeffector.frame].xform[1][1],robot.joints[robot.endeffector.frame].xform[1][2]],
-                        [robot.joints[robot.endeffector.frame].xform[2][0],robot.joints[robot.endeffector.frame].xform[2][1],robot.joints[robot.endeffector.frame].xform[2][2]]];
+
+    // To calculate current orientation
+    var end_rotation = [[robot.joints[endeffector_joint].xform[0][0],robot.joints[endeffector_joint].xform[0][1],robot.joints[endeffector_joint].xform[0][2]],
+                        [robot.joints[endeffector_joint].xform[1][0],robot.joints[endeffector_joint].xform[1][1],robot.joints[endeffector_joint].xform[1][2]],
+                        [robot.joints[endeffector_joint].xform[2][0],robot.joints[endeffector_joint].xform[2][1],robot.joints[endeffector_joint].xform[2][2]]];
 
     var rpy = extract_euler_angles(end_rotation);
 
@@ -97,24 +99,43 @@ kineval.iterateIK = function iterate_inverse_kinematics(endeffector_target_world
 
     // remember to follow order specified by cube
     // Calculate dx_n or endpoint error
-    var x_endeffector = [endeffector_world[0],endeffector_world[1],endeffector_world[2],rpy[0],rpy[1],rpy[2]]; // temp, need to add orientation
+    var x_endeffector = [endeffector_world_loc[0],endeffector_world_loc[1],endeffector_world_loc[2],rpy[0],rpy[1],rpy[2]]; // temp, need to add orientation
+    // var x_endeffector = [endeffector_world[0],endeffector_world[1],endeffector_world[2],0,0,0]; // temp, need to add orientation
     var end_angle = endeffector_target_world.orientation;
     var end_pos = endeffector_target_world.position;
     var end_target_world_vec = [end_pos[0],end_pos[1],end_pos[2],end_angle[0],end_angle[1],end_angle[2]];
+    // var end_target_world_vec = [end_pos[0],end_pos[1],end_pos[2],0,0,0];
     var dx_n_vec = vector_subtract(end_target_world_vec,x_endeffector);
-    
+    var dx_n = matrix_transpose(dx_n_vec);
+    // var j1 = kineval.generate_jacobian(dx_n);
+
+    // Calculate Inverse Jacobian
+    // var j1_inv = kineval.matrix_jacobian_inverse(j1);
+    var dist_to_goal = calc_L2_norm(end_target_world_vec,x_endeffector);
+    console.log(dist_to_goal); // test gradient descent to goal
+    // if (prev_dist < dist_to_goal) {
+    //     console.log(dist_to_goal)
+    //     prev_dist = dist_to_goal;
+    //     var test1 = kineval.generate_jacobian(endeffector_world);
+    //     var test1_inv = kineval.matrix_jacobian_inverse(test1);
+    //     dq_n_vec = [];
+    //     for (var i = 0; i < dx_n_vec.length; i++) {
+    //         dq_n_vec.push(0); 
+    //     }
+    // } else {
+    prev_dist = dist_to_goal;
     if (kineval.params.ik_orientation_included == false) {
         dx_n_vec[3] = 0; //temp remove for orientation!!!
         dx_n_vec[4] = 0;
         dx_n_vec[5] = 0;
-    }
+    }    
     var dx_n = matrix_transpose(dx_n_vec);
-
     // Compute dq_n step direction
-    var dq_n = matrix_multiply(j1_inv,dx_n); 
+    var dq_n = matrix_multiply(j1_inv, dx_n); 
 
     // Perform and return q_n step direction
     var dq_n_vec = matrix_transpose(dq_n);
+ 
     var dq_step_vec = scalar_multiply(kineval.params.ik_steplength,dq_n_vec);
     
     for (i = 0; i < kinChain.length; i++) {
@@ -143,44 +164,89 @@ kineval.generate_jacobian = function generate_jacobian(endeffector_world) {
         var joint_type = curr_joint.type;
 
         // Calculate joint axis in local frame
-        var local_axis = vector_normalize(curr_joint.axis);
+        var local_axis = curr_joint.axis;
         local_axis.push(1); // to homogenize vector
-        local_axis_T = matrix_transpose(local_axis);
+        // var world_axis_test = matrix_multiply(local_axis,curr_joint.xform);
+        // var test = world_axis_test[0];
+        // world_axis_test = test;
+        // world_axis_test.pop();
+        var local_axis_T_orig = matrix_transpose(local_axis);
+        var local_axis_T = [[local_axis[0]],[local_axis[1]],[local_axis[2]],[1]];
+        local_axis.pop();
         // Calculate joint axis in world frame
-        var world_axis = matrix_multiply(curr_joint.xform,local_axis_T);
-        world_axis_vec = matrix_transpose(world_axis);
-        world_axis_vec.pop(); // to revert to nonhomogeneous vector
+        // // var world_axis = matrix_multiply(curr_joint.xform,local_axis_T);
+        var world_axis = matrix_vector_multiply(curr_joint.xform,local_axis_T);
+        var world_axis_vec_orig = matrix_transpose(world_axis);
+        var world_axis_vec = [world_axis[0][0],world_axis[1][0],world_axis[2][0]];
+        world_axis_vec_orig.pop(); // to revert to nonhomogeneous vector
 
         // Calculate O_n - O_i-1 where O_n is the end effector, O_i-1 is current joint
         // init_z_T = matrix_transpose(init_z);
-        var world_origin = [[0],[0],[0],[1]];
-        var joint_world_origin = matrix_multiply(curr_joint.xform,world_origin); // test this!
-        var joint_world_origin_vec = matrix_transpose(joint_world_origin); // for vector operations
-        joint_world_origin_vec.pop(); // to revert to nonhomogeneous vector
+        var joint_local_origin = [[0],[0],[0],[1]];
+        // var new_origin_transform = kineval.get_transformation_matrix(curr_joint.origin.xyz,curr_joint.origin.rpy);
+        // var joint_local_origin = matrix_multiply(new_origin_transform,init_local_origin);
+        // var joint_local_origin = curr_joint.origin.xyz;
+        // joint_local_origin.push(1);
+        // var joint_local_origin_T = matrix_transpose(joint_local_origin);
+        // // var joint_world_origin = matrix_multiply(curr_joint.xform,joint_local_origin); // test this!
+        var joint_world_origin = matrix_vector_multiply(curr_joint.xform,joint_local_origin); // test this!
+        // joint_local_origin.pop();
+        var joint_world_origin_vec_orig = matrix_transpose(joint_world_origin); // for vector operations
+        var joint_world_origin_vec = [joint_world_origin[0][0],joint_world_origin[1][0],joint_world_origin[2][0]];
 
+
+        // var joint_world_origin_test = matrix_multiply([0,0,0,1],curr_joint.xform); // test this!
+        // var joint_test = joint_world_origin_test[0]
+        // joint_world_origin_test = joint_test; // to revert to nonhomogeneous vector
+        // joint_world_origin_test.pop();
+        // // joint_world_origin_vec.pop(); // to revert to nonhomogeneous vector
+        // var new_origin_transform = kineval.get_transformation_matrix(curr_joint.origin.xyz,curr_joint.origin.rpy);
+        // var new_joint_world_origin = matrix_multiply(new_origin_transform,joint_world_origin);
+        // var joint_world_origin_vec = matrix_transpose(new_joint_world_origin);
+        // joint_world_origin_vec.pop();
         // console.log(joint_world_origin_vec)
 
         var endeffector_world_copy = matrix_copy(endeffector_world);
-        var endeffector_world_vec = matrix_transpose(endeffector_world_copy);
-        endeffector_world_vec.pop();
+        // // var endeffector_world_vec = matrix_transpose(endeffector_world_copy);
+        var endeffector_world_vec = [endeffector_world_copy[0][0], endeffector_world_copy[1][0], endeffector_world_copy[2][0]];
+        // // endeffector_world_vec.pop();
 
+        // var subtract_O_n = vector_subtract(endeffector_world_vec,joint_world_origin_vec);
         var subtract_O_n = vector_subtract(endeffector_world_vec,joint_world_origin_vec);
-        var cross_O_n = vector_cross(world_axis_vec,subtract_O_n);
+        var subtract_O_w = vector_subtract(world_axis_vec,joint_world_origin_vec);
+        // for (var i = 0; i < subtract_O_n.length; i++) {
+        //     subtract_O_n[i] = Math.abs(subtract_O_n[i]);
+        // }
+        // var subtract_O_n = Math.abs(vector_subtract(endeffector_world_vec,joint_world_origin_test));
+        var cross_O_n = vector_cross(subtract_O_w,subtract_O_n);
+        // var cross_O_n = vector_cross(world_axis_test,subtract_O_n);
         if (joint_type === 'prismatic') {
-            var joint_J = [[world_axis_vec[0]],
-                           [world_axis_vec[1]],
-                           [world_axis_vec[2]],
-                           [0],
-                           [0],
-                           [0]]; 
-
-        } else { // assume joint_type === 'rotational'...how does it handle joint limits?
             var joint_J = [[cross_O_n[0]],
                            [cross_O_n[1]],
                            [cross_O_n[2]],
-                           [world_axis_vec[0]],
-                           [world_axis_vec[1]],
-                           [world_axis_vec[2]]]; 
+                           [0],
+                           [0],
+                           [0]]; 
+        // } else if (joint_type = 'fixed') {
+        //     var joint_J = [[0],
+        //                    [0],
+        //                    [0],
+        //                    [0],
+        //                    [0],
+        //                    [0]]; 
+        } else { // assume joint_type === 'rotational'...how does it handle joint limits?
+            // var joint_J = [[cross_O_n[0]],
+            //                [cross_O_n[1]],
+            //                [cross_O_n[2]],
+            //                [world_axis_vec[0]],
+            //                [world_axis_vec[1]],
+            //                [world_axis_vec[2]]];
+            var joint_J = [[cross_O_n[0]],
+                           [cross_O_n[1]],
+                           [cross_O_n[2]],
+                           [subtract_O_w[0]],
+                           [subtract_O_w[1]],
+                           [subtract_O_w[2]]];
         }
 
         jacobian = matrix_append_vector(jacobian,joint_J);

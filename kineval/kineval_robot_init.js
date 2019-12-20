@@ -21,6 +21,8 @@ kineval.initRobot = function initRobot() {
     // initialize robot collision state
     robot.collision = false;
     // last_rpy = [];
+    my_final_path_test = []; // added for testing JD
+    // collision_tree = tree_init([0,0,0,0,0,0,0,0,0,0,0]);
 }
 
 kineval.initRobotLinks = function initRobotLinks() {
