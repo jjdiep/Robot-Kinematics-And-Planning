@@ -28,9 +28,9 @@ Assignment 2 feature 12 (0.00/3): Pendularm_Double: PENDING
     
 Assignment 3 feature 13 (2.00/2): FK_MatrixRoutines: CHECK
     
-Assignment 3 feature 14 (0.00/8): FK_Transforms: DUE
+Assignment 3 feature 14 (6.40/8): FK_Transforms: PERCENT 80
     error: integrity of robot description non maintained
-(Regrade?) JD: Discussed during office hours that PI Robot was being rendered properly, had not made a change in the urdf.js file prior to your check.
+    regrade: working
 Assignment 3 feature 15 (2.00/2): FK_JointRendering: CHECK
     
 Assignment 3 feature 16 (2.00/2): FK_BaseOffset: CHECK
@@ -53,24 +53,24 @@ Assignment 4 feature 24 (2.00/2): FSMDance_Rosbridge: CHECK
     
 Assignment 5 feature 25 (0.00/6): IK_Jacobian: DUE
     error: endeffector does not monotonically decrease error to local minimum
-(Regrade) JD: request regrade of IK_Jacobian
-Assignment 5 feature 26 (0.00/3): IK_JTranspose: DUE
+    regrade: incorrect Jacobian for tested configurations
+Assignment 5 feature 26 (1.50/3): IK_JTranspose: PERCENT 50
     error: endeffector does not monotonically decrease error to local minimum
-(Regrade) JD: request regrade of IK_JTranspose
-Assignment 5 feature 27 (0.00/3): IK_JPseudoinverse: DUE
+    regrade: borderline: endeffector does not monotonically decrease error to local minimum
+Assignment 5 feature 27 (1.50/3): IK_JPseudoinverse: PERCENT 50
     error: endeffector does not monotonically decrease error to local minimum
-(Regrade) JD: request regrade of IK_JPseudoinverse
+    regrade: borderline: endeffector does not monotonically decrease error to local minimum
 Assignment 5 feature 28 (6.00/6): IK_EulerAngles: CHECK
     
 Assignment 6 feature 29 (4.00/4): MotionPlan_Collision: CHECK
     
 Assignment 6 feature 30 (2.00/2): MotionPlan_2DRRTConnect: CHECK
     
-Assignment 6 feature 31 (0.00/6): MotionPlan_CSpaceRRTConnect: DUE
+Assignment 6 feature 31 (3.00/6): MotionPlan_CSpaceRRTConnect: PERCENT 50
     error: planner does not perform RRT-Connect algorithm
-(Regrade) JD: request regrade of RRT-Connect algorithm, planner did perform RRT-Connect algorithm, however had some issues with collision checking in plan that were resolved.
-Assignment 6 feature 32 (0.00/6): MotionPlan_RRTStar: PENDING
-(Regrade?) JD: potential request for regrade of RRTStar algorithm depending on results of initial grading, tuned parameters for more optimal performance
+    regrade: borderline: collisions occur within returned motion plan
+Assignment 6 feature 32 (6.00/6): MotionPlan_RRTStar: CHECK
+    
 Assignment 7 feature 33 (12.00/12): Pitch: CHECK
     
 Assignment 7 feature 34 (6.00/6): Pitch_Advanced: CHECK
@@ -78,6 +78,7 @@ Assignment 7 feature 34 (6.00/6): Pitch_Advanced: CHECK
 Assignment 8 feature 35 (0.00/4): Advanced: PENDING
     comment: no advanced extensions requested
     comment: double pendulum derivation extension not requested
+<<<<<<< HEAD
 
 Would like to request the grading of the following advanced features in /advanced_extensions directory:
 Assignment-1 AVL Tree for Priority Queue 
@@ -86,6 +87,8 @@ Assignment-3 LU Decomposition (with Linear Solver and Inverse)
 Assignment 5 100Targets60sec
 Assignment-6 User Input of Goal Configuration
 
+=======
+>>>>>>> 4191ce4d367843cf7884ec46a87bd97addbb8101
 Quiz 1: 2.75 of 4
 Quiz 2: 4.00 of 4
 Quiz 3: 2.83 of 4
