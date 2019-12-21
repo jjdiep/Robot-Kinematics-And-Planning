@@ -11,6 +11,13 @@ kineval.initKeyEvents = function init_keyboard_events() {
 kineval.handleKeydown = function handle_keydown(keycode) {
     //console.log("handle_keydown: "+keycode);
     switch (keycode) { // h:72 j:74 k:75 l:76
+    case 89: // y for advanced extension q goal setpoint
+        if (!kineval.params.just_starting && kineval.params.q_goal_config_set_on) {
+            textbar.innerHTML = "Goal Set";
+            console.log("Goal Set")
+            kineval.robotSetGoalConfig();
+        }
+        break;
     case 74: // j 
         kineval.changeActiveLinkDown();
         break;
@@ -117,6 +124,12 @@ kineval.handleUserInput = function user_input() {
     }
     if (kineval.params.generating_motion_plan) 
         textbar.innerHTML = "motion planner has been invoked in the background";
+
+    // Advanced Extensions messages displayed
+    if (kineval.params.LU_on)
+        textbar.innerHTML = "LU Decomposition Inverse Solver feature enabled"; // not sure how to terminate message, need to turn off to end message displayed
+    if (kineval.params.q_goal_config_set_on)
+        textbar.innerHTML = "motion planning set point feature enabled: press y to set new goal";
 
 
 
@@ -256,6 +269,7 @@ kineval.displayHelp = function display_help () {
             + "<br>n/b : show next/previous pose in motion plan "
             + "<br>h : toggle gui command widget ";
             + "<br>v : print commands to screen ";
+            + "<br>y : set motion planning goal configuration ";
 }
 
 

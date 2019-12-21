@@ -1,0 +1,18 @@
+I would like to request the grading of the following advanced features in /advanced_extensions directory:
+
+Assignment-1 AVL Tree for Priority Queue
+	-TBD
+Assignment-2 Random Setpoint Pendulum
+	-To enable random trials, press 't' after selecting integrator and enabling servos, press 'y' to stop trials.
+	-Instructions for setting random trials included in GUI.
+Assignment-3 LU Decomposition (with Linear Solver and Inverse) used in exchange for double pendulum derivation points
+	-To enable, go to function kineval.initParameters() in kineval.js and set kineval.params.LU_on = true, else default is numeric.inv
+	-(PREFERRED) To enable, can also use GUI panel under Advanced Extensions tab and toggle on
+Assignment 5 100Targets60sec
+	-Included video in /advanced_extensions/Assignment-4 directory
+Assignment-6 User Input of Goal Configuration
+	-(PREFERRED) To enable, can also use GUI under Advanced Extensions Panel and toggle on
+	-To enable set kineval.parmams.q_set_goal_config_on = true, press 'y' to set goalpoint (will console.log "goal is set")
+	-If no goal is set, will default to original zero position, orientation, and joint value q_goal_config.
+
+I included the specific files I modified in the relevant folders in /advanced_extensions, however, the advanced extension features are already integrated into the main code.

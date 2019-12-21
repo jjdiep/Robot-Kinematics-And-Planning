@@ -1,0 +1,45 @@
+<!--|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/|
+||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/
+/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+
+    LU Decomposition | JavaScript support functions
+
+    Justin Diep
+    ECE Robotics
+    University of Michigan
+
+    License: Michigan Honor License 
+
+|\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/|
+||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/
+/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\
+\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\/||\-->
+<html>
+
+<body onload="init()">
+
+<script src="LU_decomp.js"></script>
+<script src="kineval_matrix_advanced.js"></script>
+
+<script>
+function init() {
+  var test = [[3.0,-.1,-.2],
+              [0.1,7.0,-.3],
+              [0.3,-.2,10]];
+  var b = [7.85,-19.3,71.4];
+  var A = LU_decomp(test);           
+  var x = LU_linear_solver(A,b);
+  var A_inv = LU_inv(test);
+  console.log(JSON.stringify(A));
+  console.log(JSON.stringify(x));
+  console.log(JSON.stringify(A_inv))
+  console.log(JSON.stringify("LU decomp done"));
+
+  return A;
+}
+
+</script>
+</body>
+</html>
+

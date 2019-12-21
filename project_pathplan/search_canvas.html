@@ -79,9 +79,9 @@ function initSearch() {
     // search_alg = "depth-first";  
     // search_alg = "breadth-first";  
     // search_alg = "greedy-best-first";  
-    // search_alg = "A-star";  
+    search_alg = "A-star";  
     // search_alg = "RRT";  
-    search_alg = "RRT-connect";  
+    // search_alg = "RRT-connect";  
     // search_alg = "RRT-star";  
 
     // specify default the world for the planner 
@@ -180,6 +180,9 @@ function initSearch() {
     //   iterations
     min_msec_between_iterations = 20;
 
+    // Advanced Extension Toggle
+    priority = 0; // 0 = Min Heap, 1 = AVL Tree
+
     // create textbar DOM element for text output to browser window
     textbar = document.createElement('div');
     textbar.style.zIndex = 0;    // if you still don't see the label, try uncommenting this
@@ -272,7 +275,12 @@ function animate() {
         + " | "
         + "queue size: " + visit_queue.length
         + " <br> "
-        + "path length: " + path_length.toFixed(2);
+        + "path length: " + path_length.toFixed(2)
+        + " <br> "
+        + "priority queue method: " + priority
+        + " <br> "
+        + "0 = Min Heap, 1 = AVL Tree Sort ";
+
         //textbar.innerHTML += "<br> mouse ("+ mouse_x+","+mouse_y+")";
         textbar.innerHTML += "<br> mouse ("+ xformViewWorldX(mouse_x)+","+xformViewWorldY(mouse_y)+")";
 
@@ -350,170 +358,178 @@ function iterateGraphSearch() { // Assignment 1
 
         case "greedy-best-first": // sorted via min heap to create priority queue, fscore = hscore, sort by heuristic to goal
         case "A-star": // sorted via min heap to create priority queue, priority queue fscore = hscore + gscore, sort by heuristic to goal and path edge cost
-            var priority = 0;
             var len_queue = neighbor_queue.length;
             // var tmp_queue = [];
             for (i_node = 0; i_node < len_queue; i_node++) {
-                var tmp = neighbor_queue[i_node];
+                var insert_tmp = neighbor_queue[i_node];
                 if (priority == 0) {
-                    minheap_insert(visit_queue, tmp);
+                    minheap_insert(visit_queue, insert_tmp);
                 } 
-                //else if (priority == 1) {
-                //     init_insert(tree,test[i],new_node);
-                //     if (new_node.lr == 0) return;
 
-                //     // find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
-                //     // (Note: update the h of each node, then check if the node is unbalanced)
-                //     var curr = new_node.parent;
-                //     var prev = new_node;
-                //     var y = prev;
-                //     var x;
+                ///////////////// ADVANCED EXTENSION AVL TREE INSERT IMPLEMENTATION /////////////
+                // else if (priority == 1) {
+                //     if (typeof tree == 'undefined') {
+                //         var tree=new node(null,null,null,0,insert_tmp,0);  // test[0] should be tmp
+                //     } else {
+                //         var new_node=new node(null,null,null,0,insert_tmp,1);
+                //         init_insert(tree,insert_tmp,new_node);
+                //         if (new_node.lr == 0) return;
+                //         // Balance AVL Tree
 
-                //     while(curr != null) {
-                //         var left_h = 0;
-                //         var right_h = 0;
-                //         if (curr.left != null) {
-                //             left_h = curr.left.height;
-                //         }
-                //         if (curr.right != null) {
-                //             right_h=curr.right.height;
-                //         }
-                //         curr.height = Math.max(left_h, right_h) + 1;
-                //         var balance_curr = left_h - right_h;
-                //         //left longer
-                //         if (balance_curr > 1) {
-                //             if (x.lr == -1) {
-                //                 var xl = 0; var yl = 0; var xr = 0;
-                //                 curr.left = x;
-                //                 x.parent = curr;
-                //                 x.lr = 1;
-                //                 var tmp = x.left;
-                //                 x.left = y; y.parent = x; y.lr = 1; y.right = tmp;
-                //                 if (tmp != null) {
-                //                     tmp.parent = y;
-                //                     tmp.lr = -1;
-                //                     xl = tmp.height;
-                //                 }
-                //                 if (y.left != null) {yl = y.left.height};
-                //                 y.height = Math.max(xl,yl)+1;
-                //                 if(x.right != null) {xr = x.right.height};
-                //                 x.height = Math.max(y.height,xr)+1;
-                //                 curr.height = Math.max(x.height,right_h) + 1;
-                //                 //exchange pointer x with y
-                //                 tmp=x; x=y; y=tmp;
+                //         // find the z y x:back track from new_node to the first unbalanced node (new_node.h<-1 or new_node.h>1);
+                //         // (Note: update the h of each node, then check if the node is unbalanced)
+                //         var curr = new_node.parent;
+                //         var prev = new_node;
+                //         var y = prev;
+                //         var x;
+
+                //         while(curr != null) {
+                //             var left_h = 0;
+                //             var right_h = 0;
+                //             if (curr.left != null) {
+                //                 left_h = curr.left.height;
                 //             }
-                //             // on left
-                //             if (curr.parent != null) {
-                //                 if (curr.lr == 1) {
-                //                     curr.parent.left = y;
-                //                     y.parent = curr.parent;
-                //                     y.lr = 1;
+                //             if (curr.right != null) {
+                //                 right_h=curr.right.height;
+                //             }
+                //             curr.height = Math.max(left_h, right_h) + 1;
+                //             var balance_curr = left_h - right_h;
+                //             //left longer
+                //             if (balance_curr > 1) {
+                //                 if (x.lr == -1) {
+                //                     var xl = 0; var yl = 0; var xr = 0;
+                //                     curr.left = x;
+                //                     x.parent = curr;
+                //                     x.lr = 1;
+                //                     var tmp = x.left;
+                //                     x.left = y; y.parent = x; y.lr = 1; y.right = tmp;
+                //                     if (tmp != null) {
+                //                         tmp.parent = y;
+                //                         tmp.lr = -1;
+                //                         xl = tmp.height;
+                //                     }
+                //                     if (y.left != null) {yl = y.left.height};
+                //                     y.height = Math.max(xl,yl)+1;
+                //                     if(x.right != null) {xr = x.right.height};
+                //                     x.height = Math.max(y.height,xr)+1;
+                //                     curr.height = Math.max(x.height,right_h) + 1;
+                //                     //exchange pointer x with y
+                //                     tmp=x; x=y; y=tmp;
+                //                 }
+                //                 // on left
+                //                 if (curr.parent != null) {
+                //                     if (curr.lr == 1) {
+                //                         curr.parent.left = y;
+                //                         y.parent = curr.parent;
+                //                         y.lr = 1;
+                //                     } else {
+                //                         curr.parent.right = y;
+                //                         y.parent = curr.parent;
+                //                         y.lr = -1;
+                //                     }
                 //                 } else {
-                //                     curr.parent.right = y;
-                //                     y.parent = curr.parent;
-                //                     y.lr = -1;
+                //                     y.parent = null;
+                //                     y.lr=0;
                 //                 }
-                //             } else {
-                //                 y.parent = null;
-                //                 y.lr=0;
-                //             }
-                //             tmp = y.right;
-                //             y.right = curr;
-                //             curr.parent = y; curr.lr = -1; curr.left = tmp;
-                //             var yr = 0;
-                //             if (tmp != null) {
-                //                 tmp.parent = curr;
-                //                 tmp.lr = 1;
-                //                 yr = tmp.height;
-                //             }
-                //             curr.height=Math.max(yr,right_h)+1;
-                //             y.height=Math.max(y.left.height,y.right.height)+1;
-                //             if(y.parent != null) {
-                //                 var pl = 0;
-                //                 var pr = 0;
-                //                 if (y.parent.left != null) {pl = y.parent.left.height;}
-                //                 if (y.parent.right != null) {pr = y.parent.right.height;}
-                //                 y.parent.height=Math.max(pl,pr) + 1;
-                //             } else {
-                //                 tree = y;
-                //                 if (y.left != null) {y.left.parent = tree;}
-                //                 if (y.right != null) {y.right.parent = tree;}
-                //             }
-                //             break;
-                //         }
-
-                //         else if (balance_curr < -1) { //right longer  
-    
-                //             if (x.lr == 1) {
-                //                 var xl = 0; var yl = 0; var xr = 0;
-                //                 curr.right = x; x.parent = curr; x.lr = -1;
-                //                 var tmp = x.right;
-                //                 x.right = y;
-                //                 y.parent = x;
-                //                 y.lr = -1;
-                //                 y.left = tmp;
+                //                 tmp = y.right;
+                //                 y.right = curr;
+                //                 curr.parent = y; curr.lr = -1; curr.left = tmp;
+                //                 var yr = 0;
                 //                 if (tmp != null) {
-                //                     tmp.parent = y;
+                //                     tmp.parent = curr;
                 //                     tmp.lr = 1;
-                //                     xr = tmp.height;
+                //                     yr = tmp.height;
                 //                 }
-                //                 if (y.left != null) yl = y.left.height;
-                //                 y.height = Math.max(xr,yl)+1;
-                //                 if(x.left != null) xl = x.left.height;
-                //                 x.height = Math.max(y.height,xl)+1;
-                //                 curr.height = Math.max(x.height,left_h)+1;
-                //                 //exchange pointer x with y
-                //                 tmp=x;
-                //                 x=y;
-                //                 y=tmp;
-                //             }
-                //             // on left
-                //             if (curr.parent != null) {
-                //                 if (curr.lr == -1) {
-                //                     curr.parent.right = y;
-                //                     y.parent = curr.parent;
-                //                     y.lr = -1;
+                //                 curr.height=Math.max(yr,right_h)+1;
+                //                 y.height=Math.max(y.left.height,y.right.height)+1;
+                //                 if(y.parent != null) {
+                //                     var pl = 0;
+                //                     var pr = 0;
+                //                     if (y.parent.left != null) {pl = y.parent.left.height;}
+                //                     if (y.parent.right != null) {pr = y.parent.right.height;}
+                //                     y.parent.height=Math.max(pl,pr) + 1;
                 //                 } else {
-                //                     curr.parent.left = y;
-                //                     y.parent = curr.parent;
-                //                     y.lr = 1;
+                //                     tree = y;
+                //                     if (y.left != null) {y.left.parent = tree;}
+                //                     if (y.right != null) {y.right.parent = tree;}
                 //                 }
-                //             } else {
-                //                 y.parent=null;
-                //                 y.lr=0;
+                //                 break;
                 //             }
-                //             tmp = y.left;
-                //             y.left = curr;
-                //             curr.parent = y;
-                //             curr.lr = 1;
-                //             curr.right = tmp;
-                //             var yl=0;
-                //             if(tmp != null){
-                //                 tmp.parent = curr;
-                //                 tmp.lr = -1;
-                //                 yl=tmp.height;
-                //             }
-                //             curr.height=Math.max(yl,left_h)+1;
-                //             y.height=Math.max(y.left.height,y.right.height)+1;
-                //             if(y.parent!=null){
-                //                 var pl=0;
-                //                 var pr=0;
-                //                 if(y.parent.left!=null) pl=y.parent.left.height;
-                //                 if(y.parent.right!=null) pr=y.parent.right.height;
-                //                 y.parent.height=Math.max(pl,pr)+1;
-                //             } else {
-                //                 tree=y;
-                //                 if(y.left!=null) y.left.parent=tree;
-                //                 if(y.right!=null) y.right.parent=tree;
-                //             }
-                //             break;
-                //         }
 
-                //         x = prev;
-                //         y = curr;
-                //         prev = curr;
-                //         curr = curr.parent;
+                //             else if (balance_curr < -1) { //right longer  
+        
+                //                 if (x.lr == 1) {
+                //                     var xl = 0; var yl = 0; var xr = 0;
+                //                     curr.right = x; x.parent = curr; x.lr = -1;
+                //                     var tmp = x.right;
+                //                     x.right = y;
+                //                     y.parent = x;
+                //                     y.lr = -1;
+                //                     y.left = tmp;
+                //                     if (tmp != null) {
+                //                         tmp.parent = y;
+                //                         tmp.lr = 1;
+                //                         xr = tmp.height;
+                //                     }
+                //                     if (y.left != null) yl = y.left.height;
+                //                     y.height = Math.max(xr,yl)+1;
+                //                     if(x.left != null) xl = x.left.height;
+                //                     x.height = Math.max(y.height,xl)+1;
+                //                     curr.height = Math.max(x.height,left_h)+1;
+                //                     //exchange pointer x with y
+                //                     tmp=x;
+                //                     x=y;
+                //                     y=tmp;
+                //                 }
+                //                 // on left
+                //                 if (curr.parent != null) {
+                //                     if (curr.lr == -1) {
+                //                         curr.parent.right = y;
+                //                         y.parent = curr.parent;
+                //                         y.lr = -1;
+                //                     } else {
+                //                         curr.parent.left = y;
+                //                         y.parent = curr.parent;
+                //                         y.lr = 1;
+                //                     }
+                //                 } else {
+                //                     y.parent=null;
+                //                     y.lr=0;
+                //                 }
+                //                 tmp = y.left;
+                //                 y.left = curr;
+                //                 curr.parent = y;
+                //                 curr.lr = 1;
+                //                 curr.right = tmp;
+                //                 var yl=0;
+                //                 if(tmp != null){
+                //                     tmp.parent = curr;
+                //                     tmp.lr = -1;
+                //                     yl=tmp.height;
+                //                 }
+                //                 curr.height=Math.max(yl,left_h)+1;
+                //                 y.height=Math.max(y.left.height,y.right.height)+1;
+                //                 if(y.parent!=null){
+                //                     var pl=0;
+                //                     var pr=0;
+                //                     if(y.parent.left!=null) pl=y.parent.left.height;
+                //                     if(y.parent.right!=null) pr=y.parent.right.height;
+                //                     y.parent.height=Math.max(pl,pr)+1;
+                //                 } else {
+                //                     tree=y;
+                //                     if(y.left!=null) y.left.parent=tree;
+                //                     if(y.right!=null) y.right.parent=tree;
+                //                 }
+                //                 break;
+                //             }
+
+                //             x = prev;
+                //             y = curr;
+                //             prev = curr;
+                //             curr = curr.parent;
+                //         }
                 //     }
+                //     visit_queue.push(curr)
                 // } // end insert
             }
 
@@ -523,6 +539,7 @@ function iterateGraphSearch() { // Assignment 1
                 if (priority == 0) {
                     visit_node = minheap_extract(visit_queue);
                 }
+                ///////////////// ADVANCED EXTENSION AVL TREE EXTRACT IMPLEMENTATION ////////////
                 // else if (priority == 1) {
                 //     var curr = tree;
                 //     var min_value;
@@ -550,7 +567,75 @@ function iterateGraphSearch() { // Assignment 1
                 //         }
                 //         curr = curr.left;
                 //     }
-                    
+                //     console.log("min:",min_value);
+                //     while(curr != null) {
+                //         var left_h=0;
+                //         var right_h=0;
+                //         if (curr.left!=null){left_h=curr.left.height;}
+                //         if (curr.right!=null){right_h=curr.right.height;}
+                //         curr.height =Math.max(left_h, right_h)+1;
+                //         var balance_curr=left_h-right_h;
+                //         //console.log("before:",prev.value,curr.value,left_h,right_h,balance_curr); 
+                //         //right longer
+                //         if(balance_curr<-1){
+                //             var y=curr.right;
+                //             var x=y;
+                //             if(y.right==null){
+                //                 x=y.left;
+                //                 curr.right=x;
+                //                 x.parent=curr;
+                //                 x.lr=-1;
+                //                 x.right=y;
+                //                 y.parent=x;
+                //                 y.lr=-1;
+                //                 y.height=1;
+                //                 x.height=2;
+
+                //                 var tmp=x; x=y; y=tmp;
+                //             }
+                //             if(curr.parent!=null){
+                //                 if (curr.lr == -1) {
+                //                     curr.parent.right = y;
+                //                       y.parent = curr.parent;
+                //                       y.lr = -1;
+                //                 } else {
+                //                       curr.parent.left = y;
+                //                       y.parent = curr.parent;
+                //                       y.lr = 1;
+                //                 }
+                //             } else {
+                //                 y.parent=null;
+                //                 y.lr=0;
+                //             }
+                //             tmp = y.left;
+                //             y.left = curr;
+                //             curr.parent = y;
+                //             curr.lr = 1;
+                //             curr.right = tmp;
+                //             var yl=0;
+                //             if(tmp!=null){
+                //                 tmp.parent = curr;
+                //                 tmp.lr = -1;
+                //                 yl=tmp.height;
+                //             }
+                //             curr.height=Math.max(yl,left_h)+1;
+                //             y.height=Math.max(y.left.height,y.right.height)+1;
+                //             if(y.parent!=null){
+                //                 var pl=0;
+                //                 var pr=0;
+                //                 if(y.parent.left!=null) pl=y.parent.left.height;
+                //                 if(y.parent.right!=null) pr=y.parent.right.height;
+                //                 y.parent.height=Math.max(pl,pr)+1;
+                //             } else {
+                //                 tree=y;
+                //                 if(y.left!=null) y.left.parent=tree;
+                //                 if(y.right!=null) y.right.parent=tree;
+                //             }
+                //             break;
+                //         }
+
+                //         curr=curr.parent;
+                //     }
                 // } // end extract
 
                 search_iteration();
@@ -1184,6 +1269,7 @@ function extendRRT(tree,q_target) {
         return "trapped";
     }
 }
+
 function Near(tree,z_neighbor_list) {
     var prior_z_dist = calc_L2_norm(rrt_q_new,tree.vertices[z_neighbor_list[0]].vertex);
     var prior_z_cost = tree.vertices[z_neighbor_list[0]].distance;

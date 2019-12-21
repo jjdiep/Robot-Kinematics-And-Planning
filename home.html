@@ -146,6 +146,17 @@ function my_init() {
     song.src = "music/waves.mp3";    
     kineval.startingPlaceholderInit(); // a quick and dirty JavaScript tutorial
     prev_dist = 0;
+
+    // Advanced Extension toggle //
+    // kineval.params.LU_on = true; // set true to turn on LU inverse function (used in kineval_matrix in matrix_pseudoinverse)
+    if (kineval.params.LU_on) {
+        console.log("LU Decomposition Inverse Solver Turned On")
+    }
+    // kineval.params.q_goal_config_set_on = true; // set true to turn on motion plan goal setpoint feature
+    q_goal_set = [];
+    if (kineval.params.q_goal_config_set_on) {
+        console.log("Goal Setpoint Turned On")
+    }
 }
 
 //////////////////////////////////////////////////

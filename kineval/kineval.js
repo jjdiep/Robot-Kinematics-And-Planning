@@ -284,6 +284,9 @@ kineval.initParameters = function initParameters() {
     kineval.params.trial_ik_random.targets = 0;
     kineval.params.trial_ik_random.distance_current = 0.00001;
 
+    // Advanced extensions
+    kineval.params.LU_on = false;
+    kineval.params.q_goal_config_set_on = false;
 
     // initialize the active joint for user control
     kineval.params.active_link = robot.base;
@@ -575,9 +578,17 @@ kineval.initGUIDisplay = function initGUIDisplay () {
     gui_axes.add(kineval.params, 'display_joints_active_axes');
     gui_axes.add(kineval.params, 'display_wireframe');
     gui_axes.add(kineval.params, 'display_collision_bboxes');
+    gui_colors = gui_display.addFolder('Colors');
+
+    // for Advanced Extensions
+    gui_display = gui.addFolder('Advanced Extensions');
+    gui_axes = gui_display.addFolder('LU Decomposition Inverse Solver');
+    gui_axes.add(kineval.params, 'LU_on'); // need to add flag to kineval.params
+    gui_axes = gui_display.addFolder('Add Goal Setpoint');
+    gui_axes.add(kineval.params, 'q_goal_config_set_on'); // need to add flag to kineval.params
+
     //gui_axes.add(kineval.params, 'display_map');
 
-    gui_colors = gui_display.addFolder('Colors');
 /*
     gui_background_color = gui_colors.addFolder('Background');
     // KE 2 : determine how to set background clear color

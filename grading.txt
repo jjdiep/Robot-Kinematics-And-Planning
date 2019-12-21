@@ -79,8 +79,7 @@ Assignment 8 feature 35 (0.00/4): Advanced: PENDING
     comment: no advanced extensions requested
     comment: double pendulum derivation extension not requested
 
-Will add advanced_extensions folder and .txt in next commit (to be added): 
-Would like to request the grading of the following advanced features:
+Would like to request the grading of the following advanced features in /advanced_extensions directory:
 Assignment-1 AVL Tree for Priority Queue 
 Assignment-2 Random Setpoint Pendulum
 Assignment-3 LU Decomposition (with Linear Solver and Inverse)

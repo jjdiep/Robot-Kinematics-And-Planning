@@ -49,6 +49,7 @@ kineval.planMotionRRTConnect = function motionPlanningRRTConnect() {
         kineval.robotRRTPlannerInit();
         kineval.params.generating_motion_plan = true;
         kineval.params.update_motion_plan = false;
+        kineval.params.q_goal_config_set_on = false;
         kineval.params.planner_state = "initializing";
     }
     if (kineval.params.generating_motion_plan) {
@@ -58,6 +59,7 @@ kineval.planMotionRRTConnect = function motionPlanningRRTConnect() {
             kineval.params.generating_motion_plan = false;
             textbar.innerHTML = "planner execution complete";
             kineval.params.planner_state = "complete";
+            kineval.params.q_goal_config_set_on = true;
         }
         else kineval.params.planner_state = "searching";
     }
@@ -117,7 +119,15 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     // set goal configuration as the zero configuration
     var i; 
     q_goal_config = new Array(q_start_config.length);
-    for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
+    if (kineval.params.q_goal_config_set_on) {
+        if (q_goal_set.length === 0) {
+            for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
+        } else {
+            q_goal_config = q_goal_set;
+        }
+    } else {
+        for (i=0;i<q_goal_config.length;i++) q_goal_config[i] = 0;
+    }
     // if (robot.name == "sawyer") {
     //     q_goal_config[1] = .91488; // sawyer
     // }
@@ -137,7 +147,31 @@ kineval.robotRRTPlannerInit = function robot_rrt_planner_init() {
     cur_time = Date.now();
 }
 
+kineval.robotSetGoalConfig = function robotSetGoalConfig() {
+    q_goal_set = [
+        robot.origin.xyz[0],
+        robot.origin.xyz[1],
+        robot.origin.xyz[2],
+        robot.origin.rpy[0],
+        robot.origin.rpy[1],
+        robot.origin.rpy[2]
+    ];
 
+    q_names = {};  // store mapping between joint names and q DOFs
+    q_index = [];  // store mapping between joint names and q DOFs
+
+    for (x in robot.joints) {
+        q_names[x] = robot.joints.length;
+        q_index[robot.joints.length] = x;
+        q_goal_set = q_goal_set.concat(robot.joints[x].angle);
+    }
+    var test = kineval.poseIsCollision(q_goal_set);
+    if (robot.collision != true) {
+        console.log("Cannot set goal here due to collision")
+        for (i=0;i<q_goal_set.length;i++) q_goal_set[i] = 0;
+    }
+    display_goal_vertex(q_goal_set);
+}
 
 function robot_rrt_planner_iterate() {
 
@@ -164,7 +198,7 @@ function robot_rrt_planner_iterate() {
             rrt_eps = .7;
             rrt_result = iterate_rrt_basic();
         } else if (rrt_alg == 1) {
-            rrt_eps = .7;
+            rrt_eps = .5;
             rrt_result = iterate_rrt_connect();
         } else if (rrt_alg == 2) {
             rrt_eps = .7;
@@ -298,6 +332,22 @@ function tree_init(q) {
     tree.newest = 0;
 
     return tree;
+}
+
+function display_goal_vertex(q) {
+
+    // create new vertex object for tree with given configuration and no edges
+    var new_vertex = {};
+    new_vertex.edges = [];
+    new_vertex.vertex = q;
+    // create rendering geometry for base location of vertex configuration
+    add_config_origin_indicator_geom(new_vertex);
+    if (robot.collision !== true) { // corrected goal config set
+        new_vertex.geom.material.color = {r:0,g:1,b:0};
+    } else { // desired goal config set
+        new_vertex.geom.material.color = {r:0,g:0,b:1};
+    }
+
 }
 
 function tree_add_vertex(tree,q,dist) {
@@ -523,7 +573,7 @@ function bfs_fringe(tree,curr_node) {
 
 function interpolate_q_check(q_near,rrt_q_new) {
     if (rrt_alg !== 2) {
-        var num_interp = 5;
+        var num_interp = 3;
     } else {
         var num_interp = 2;
         if (final_path_check) {
@@ -695,20 +745,14 @@ function path_dfs(tree, curr_node) {
 
     curr_node.vertex.visited = true;
     var destination_dist = calc_L2_norm(curr_node.vertex,destinationNode);
-    while(destination_dist > rrt_eps) {
+    while(destination_dist > rrt_eps/2) {
         var current_edge_pt = curr_node.edges[0];
         in_path.push(current_edge_pt);
         curr_node = current_edge_pt;
         destination_dist = calc_L2_norm(curr_node.vertex,destinationNode);
     }
     return in_path;
-
 }
-
-
-// function getRndInt(min, max) {
-//   return Math.floor(Math.random() * (max - min) ) + min;
-// }
 
 function rand_num(lower,upper) {
     var num = Math.random() * (upper - lower) + lower;
