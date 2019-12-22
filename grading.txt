@@ -51,46 +51,52 @@ Assignment 4 feature 23 (2.00/2): FSMDance_Prismatic: CHECK
     
 Assignment 4 feature 24 (2.00/2): FSMDance_Rosbridge: CHECK
     
-Assignment 5 feature 25 (0.00/6): IK_Jacobian: DUE
+Assignment 5 feature 25 (3.60/6): IK_Jacobian: PERCENT 60
     error: endeffector does not monotonically decrease error to local minimum
     regrade: incorrect Jacobian for tested configurations
-Assignment 5 feature 26 (1.50/3): IK_JTranspose: PERCENT 50
+    regrade2: working
+Assignment 5 feature 26 (1.80/3): IK_JTranspose: PERCENT 60
     error: endeffector does not monotonically decrease error to local minimum
     regrade: borderline: endeffector does not monotonically decrease error to local minimum
-Assignment 5 feature 27 (1.50/3): IK_JPseudoinverse: PERCENT 50
+    regrade2: working
+Assignment 5 feature 27 (1.80/3): IK_JPseudoinverse: PERCENT 60
     error: endeffector does not monotonically decrease error to local minimum
     regrade: borderline: endeffector does not monotonically decrease error to local minimum
+    regrade2: working
 Assignment 5 feature 28 (6.00/6): IK_EulerAngles: CHECK
     
 Assignment 6 feature 29 (4.00/4): MotionPlan_Collision: CHECK
     
 Assignment 6 feature 30 (2.00/2): MotionPlan_2DRRTConnect: CHECK
     
-Assignment 6 feature 31 (3.00/6): MotionPlan_CSpaceRRTConnect: PERCENT 50
+Assignment 6 feature 31 (3.60/6): MotionPlan_CSpaceRRTConnect: PERCENT 60
     error: planner does not perform RRT-Connect algorithm
     regrade: borderline: collisions occur within returned motion plan
+    regrade2: working
 Assignment 6 feature 32 (6.00/6): MotionPlan_RRTStar: CHECK
     
 Assignment 7 feature 33 (12.00/12): Pitch: CHECK
     
 Assignment 7 feature 34 (6.00/6): Pitch_Advanced: CHECK
     
-Assignment 8 feature 35 (0.00/4): Advanced: PENDING
+Assignment 8 feature 35 (7.00/4): Advanced: PERCENT 175
     comment: no advanced extensions requested
     comment: double pendulum derivation extension not requested
-<<<<<<< HEAD
-
-Would like to request the grading of the following advanced features in /advanced_extensions directory:
-Assignment-1 AVL Tree for Priority Queue 
-Assignment-2 Random Setpoint Pendulum
-Assignment-3 LU Decomposition (with Linear Solver and Inverse)
-Assignment 5 100Targets60sec
-Assignment-6 User Input of Goal Configuration
-
-=======
->>>>>>> 4191ce4d367843cf7884ec46a87bd97addbb8101
+    PathPlan_BalancedTree: PENDING
+    error: motion planner does not iterate
+    Pendularm_RandomTrial: CHECK
+    FK_LU: PERCENT 66
+    error: not all tests passed
+    IK_LU: CHECK
+    comment: excellent
+    IK_100in60: CHECK
+    RRT_ArbitraryGoal: PERCENT 50
+    error: unexpected goals achieved
 Quiz 1: 2.75 of 4
 Quiz 2: 4.00 of 4
 Quiz 3: 2.83 of 4
 Quiz 4: 2.50 of 4
 Quiz 5: 5.00 of 4
+
+Total points: 138.28333333333333
+Final Grade: A
