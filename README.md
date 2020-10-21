@@ -1,3 +1,4 @@
+This is an unofficial copy of my assignments from EECS 567: Robot Kinematic and Planning in Fall 2019 in order to showcase some of my coursework done at the University of Michigan, Ann Arbor. The original repository is private only in order to protect the integrity of the coursework that may or may not be used in future iterations of the class.
 
 KinEval
 =======
